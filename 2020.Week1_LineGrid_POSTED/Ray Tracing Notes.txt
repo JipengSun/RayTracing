@@ -1,1 +1,70 @@
-The structure of the RayTracing Project
+The physical structure of the RayTracing Project:
+
+GUIbox-Lib
+// GUI functions
+VBObox-Lib 
+// Two Displayed Area
+    preView
+    rayView
+traceSupplement
+// All the basic ray tracing prototypes
+    CRay
+    // Ray objects (x,y,z,w origin point and a diretion vector)
+    CCamera
+    // Ray-tracing camera in 'world' coordinates
+    camera eyepoint
+    camera UVN coordinates
+    camera frustum
+    camera x,y resolution
+        setEyeRay(CRay, image-plane-x, image-plane-y)
+
+
+    CGeom
+    // Create shapes
+    CImgBuf
+    // Construct a floating-point image from ray-tracer
+        int2float
+        float2int
+        makeRayRacedImage
+        // Very Important in current structure
+        1. new CRay, CCamera, CGeom objects
+        2. for each Pixel (i,j)
+        3. CCamera.setEyeRay(CRay,i,j)
+        4. hit = CGeom.traceGrid(CRay)
+        5. Based on the hit result, compute each pixel's color result
+        6. Assign each color result into this.fBuf
+        7. float2int()
+
+
+The logic structure of the RayTracing project:
+1. Prepare the preView VBO object(left side for WebGL generated scene) and rayView VBO object(right side for the RayTracing generated image)
+2. Use GUIbox to maintain the global camera eye point, aim points, and up dir vector.
+3. main() drawAll: preView and rayView each executes 
+        gl.viewport();
+        preView.switchToMe(); 
+        preView.adjust(); // change the mvpMat based on the GUI input.
+        preView.draw(); 
+
+        gl.viewport();
+        rayView.switchToMe(); 
+        rayView.adjust();
+        rayView.draw(); 
+4. Press T key to call 
+        g_myPic.makeRayTracedImage(), 
+        rayView.switchToMe(), 
+        rayView.reload(), 
+        drawAll()
+5. g_myPic is an object of CImgBuf(256,256), g_myPic.makeRayTracedImage() will
+        1. new CRay, CCamera, CGeom(JT_GNDPLANE) objects
+            1. CRay will be defined by orig and dir.
+            2. CCamera will be defined by eyePt, UVN axises, image-plane, rectangular tiles's size(each pixel's UVN location)
+            3. CGeom will be defined by shapeSelect parameters. For lineGrid, define zGrid, xgap, ygap, lineWidth, gapColor, skyColor
+        2. for each Pixel (i,j)
+        3. CCamera.setEyeRay(CRay,i,j)
+        4. hit = CGeom.traceGrid(CRay)
+        // Decide the hit type of the ray for the CGeom.
+        5. Based on the hit result, compute each pixel's color result
+        6. Assign each color result into this.fBuf
+        7. float2int()
+6. In reload(), gl.texSubImage2D() will use g_myPic.xSiz, g_myPic.ySiz, g_myPic.iBuf as attribute.
+
