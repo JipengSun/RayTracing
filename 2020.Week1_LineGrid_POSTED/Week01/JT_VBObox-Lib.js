@@ -101,12 +101,12 @@ function VBObox0() {  // (JUST ONE instance: as 'preView' var
 	this.VERT_SRC =	//--------------------- VERTEX SHADER source code 
   'attribute vec4 a_Position;\n' +	
   'attribute vec4 a_Color;\n' +
-//  'uniform mat4 u_mvpMat' +
+  'uniform mat4 u_mvpMat;\n' +
   'varying vec4 v_colr;\n' +
   //
   'void main() {\n' +
-// ' gl_Position = u_mvpMat * a_Position;\n' +
-  '  gl_Position = a_Position;\n' +
+ '  gl_Position = u_mvpMat * a_Position;\n' +
+//  '  gl_Position = a_Position;\n' +
   '  v_colr = a_Color;\n' +
   '}\n';
 
@@ -126,16 +126,19 @@ function VBObox0() {  // (JUST ONE instance: as 'preView' var
   												    // transfer to GPU's vertex buffer object (VBO);
     // A few 3D vertices with color and alpha; one vertex per line
     // with a_Position attribute (x,y,z,w) followed by a_Color attribute (RGBA)
-    -1.00,  1.00, 0.0, 1.0,		1.0, 0.0, 0.0, 1.0,	// x,y,z,w; r,g,b,a (RED)
-    -1.00, -1.00, 0.0, 1.0,  	0.0, 1.0, 0.0, 1.0,	// GREEN
-     1.00,  1.00, 0.0, 1.0,		0.0, 0.0, 1.0, 1.0, // BLUE
-     1.00, -1.00, 0.0, 1.0,		1.0, 1.0, 1.0, 1.0,	// WHITE
-     0.50, -0.50, 0.0, 1.0,   1.0, 0.0, 1.0, 1.0,	// VIOLET
-     0.00, -0.70, 0.0, 1.0,   0.2, 1.0, 1.0, 1.0,	// CYAN
+    0.00, 0.00, 0.0, 1.0,		1.0, 1.0, 1.0, 1.0,	// x,y,z,w; r,g,b,a (RED)
+    1.00, 0.00, 0.0, 1.0,		1.0, 0.0, 0.0, 1.0,	// x,y,z,w; r,g,b,a (RED)
+   // green Y axis:
+    0.00, 0.00, 0.0, 1.0,  	1.0, 1.0, 1.0, 1.0,	
+    0.00, 1.00, 0.0, 1.0,  	0.0, 1.0, 0.0, 1.0,	
+   // blue Z axis:
+    0.00, 0.00, 0.0, 1.0,  	1.0, 1.0, 1.0, 1.0,	
+    0.00, 0.00, 1.0, 1.0,  	0.0, 0.0, 1.0, 1.0,	
      ]);   
 
 	this.vboVerts = 6;						// # of vertices held in 'vboContents' array
-	this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
+  this.appendGroundGrid();
+  this.FSIZE = this.vboContents.BYTES_PER_ELEMENT;
 	                              // bytes req'd by 1 vboContents array element;
 																// (why? used to compute stride and offset 
 																// in bytes for vertexAttribPointer() calls)
@@ -181,20 +184,198 @@ function VBObox0() {  // (JUST ONE instance: as 'preView' var
 	this.a_ColorLoc;							// GPU location for 'a_Color' attribute
 
 	            //---------------------- Uniform locations &values in our shaders
-/* COMMENTED-OUT mvpMat in shader above...
+
 // OLD version using cuon-matrix-quat03.js:
 //	this.mvpMat = new Matrix4();	// Transforms CVV axes to model axes.
 
 // NEW version using glMatrix.js:
   this.mvpMat = mat4.create();  // Transforms CVV axes to model axes.
 	this.u_mvpMatLoc;							// GPU location for u_ModelMat uniform
-*/
+
 /*  NO TEXTURE MAPPING HERE.
   this.u_TextureLoc;            // GPU location for texture map (image)
   this.u_SamplerLoc;            // GPU location for texture sampler
 */
 }
 
+VBObox0.prototype.appendGroundGrid = function() {
+  //==============================================================================
+  // Create a set of vertices for an x,y grid of colored lines in the z=0 plane
+  // centered at x=y=z=0, and store them in local array vertSet[].  
+  // THEN:
+  // Append the contents of vertSet[] to existing contents of the this.vboContents 
+  // array; update this.vboVerts to include these new verts for drawing.
+  // NOTE: use gl.drawArrays(gl.GL_LINES,,) to draw these vertices.
+  
+    //Set # of lines in grid--------------------------------------
+    this.xyMax	= 50.0;			// grid size; extends to cover +/-xyMax in x and y.
+    this.xCount = 101;			// # of lines of constant-x to draw to make the grid 
+    this.yCount = 101;		  // # of lines of constant-y to draw to make the grid 
+                            // xCount, yCount MUST be >1, and should be odd.
+                            // (why odd#? so that we get lines on the x,y axis)
+    //Set # vertices per line-------------------------------------
+    // You may wish to break up each line into separate line-segments.
+    // Here I've split each line into 4 segments; two above, two below the axis.
+    // (why? as of 5/2018, Chrome browser sometimes fails to draw lines whose
+    // endpoints are well outside of the view frustum (Firefox works OK, though).
+    var vertsPerLine =8;      // # vertices stored in vertSet[] for each line;
+                  // (why 8? why not just 2?  Because it lets us
+                // vary color (and later, z-value) along the line
+    //Set vertex contents:----------------------------------------
+    this.floatsPerVertex = 8;  // x,y,z,w;  r,g,b,a values.
+    
+    //Create (local) vertSet[] array-----------------------------
+    var vertCount = (this.xCount + this.yCount) * vertsPerLine;
+    var vertSet = new Float32Array(vertCount * this.floatsPerVertex); 
+        // This array will hold (xCount+yCount) lines, kept as
+        // (xCount+yCount)*vertsPerLine vertices, kept as
+        // (xCount+yCount)*vertsPerLine*floatsPerVertex array elements (floats).
+    
+    // Set Vertex Colors--------------------------------------
+    // Each line's color is constant, but set by the line's position in the grid.
+    //  For lines of constant-x, the smallest (or most-negative) x-valued line 
+    //    gets color xBgnColr; the greatest x-valued line gets xEndColr, 
+    //  Similarly, constant-y lines get yBgnColr for smallest, yEndColr largest y.
+     this.xBgnColr = vec4.fromValues(1.0, 0.0, 0.0, 1.0);	  // Red
+     this.xEndColr = vec4.fromValues(0.0, 1.0, 1.0, 1.0);    // Cyan
+     this.yBgnColr = vec4.fromValues(0.0, 1.0, 0.0, 1.0);	  // Green
+     this.yEndColr = vec4.fromValues(1.0, 0.0, 1.0, 1.0);    // Magenta
+  
+    // Compute how much the color changes between 1 line and the next:
+    var xColrStep = vec4.create();  // [0,0,0,0]
+    var yColrStep = vec4.create();
+    vec4.subtract(xColrStep, this.xEndColr, this.xBgnColr); // End - Bgn
+    vec4.subtract(yColrStep, this.yEndColr, this.yBgnColr);
+    vec4.scale(xColrStep, xColrStep, 1.0/(this.xCount -1)); // scale by # of lines
+    vec4.scale(yColrStep, yColrStep, 1.0/(this.yCount -1));
+  
+    // Local vars for vertex-making loops-------------------
+    var xgap = 2*this.xyMax/(this.xCount-1);		// Spacing between lines in x,y;
+    var ygap = 2*this.xyMax/(this.yCount-1);		// (why 2*xyMax? grid spans +/- xyMax).
+    var xNow;           // x-value of the current line we're drawing
+    var yNow;           // y-value of the current line we're drawing.
+    var line = 0;       // line-number (we will draw xCount or yCount lines, each
+                        // made of vertsPerLine vertices),
+    var v = 0;          // vertex-counter, used for the entire grid;
+    var idx = 0;        // vertSet[] array index.
+    var colrNow = vec4.create();   // color of the current line we're drawing.
+  
+    //----------------------------------------------------------------------------
+    // 1st BIG LOOP: makes all lines of constant-x
+    for(line=0; line<this.xCount; line++) {   // for every line of constant x,
+      colrNow = vec4.scaleAndAdd(             // find the color of this line,
+                colrNow, this.xBgnColr, xColrStep, line);	
+      xNow = -this.xyMax + (line*xgap);       // find the x-value of this line,    
+      for(i=0; i<vertsPerLine; i++, v++, idx += this.floatsPerVertex) 
+      { // for every vertex in this line,  find x,y,z,w;  r,g,b,a;
+        // and store them sequentially in vertSet[] array.
+        // We already know  xNow; find yNow:
+        switch(i) { // find y coord value for each vertex in this line:
+          case 0: yNow = -this.xyMax;   break;  // start of 1st line-segment;
+          case 1:                               // end of 1st line-segment, and
+          case 2: yNow = -this.xyMax/2; break;  // start of 2nd line-segment;
+          case 3:                               // end of 2nd line-segment, and
+          case 4: yNow = 0.0;           break;  // start of 3rd line-segment;
+          case 5:                               // end of 3rd line-segment, and
+          case 6: yNow = this.xyMax/2;  break;  // start of 4th line-segment;
+          case 7: yNow = this.xyMax;    break;  // end of 4th line-segment.
+          default: 
+            console.log("VBObox0.appendGroundGrid() !ERROR! **X** line out-of-bounds!!\n\n");
+          break;
+        } // set all values for this vertex:
+        vertSet[idx  ] = xNow;            // x value
+        vertSet[idx+1] = yNow;            // y value
+        vertSet[idx+2] = 0.0;             // z value
+        vertSet[idx+3] = 1.0;             // w;
+        vertSet[idx+4] = colrNow[0];  // r
+        vertSet[idx+5] = colrNow[1];  // g
+        vertSet[idx+6] = colrNow[2];  // b
+        vertSet[idx+7] = colrNow[3];  // a;
+      }
+    }
+    //----------------------------------------------------------------------------
+    // 2nd BIG LOOP: makes all lines of constant-y
+    for(line=0; line<this.yCount; line++) {   // for every line of constant y,
+      colrNow = vec4.scaleAndAdd(             // find the color of this line,
+                colrNow, this.yBgnColr, yColrStep, line);	
+      yNow = -this.xyMax + (line*ygap);       // find the y-value of this line,    
+      for(i=0; i<vertsPerLine; i++, v++, idx += this.floatsPerVertex) 
+      { // for every vertex in this line,  find x,y,z,w;  r,g,b,a;
+        // and store them sequentially in vertSet[] array.
+        // We already know  yNow; find xNow:
+        switch(i) { // find y coord value for each vertex in this line:
+          case 0: xNow = -this.xyMax;   break;  // start of 1st line-segment;
+          case 1:                               // end of 1st line-segment, and
+          case 2: xNow = -this.xyMax/2; break;  // start of 2nd line-segment;
+          case 3:                               // end of 2nd line-segment, and
+          case 4: xNow = 0.0;           break;  // start of 3rd line-segment;
+          case 5:                               // end of 3rd line-segment, and
+          case 6: xNow = this.xyMax/2;  break;  // start of 4th line-segment;
+          case 7: xNow = this.xyMax;    break;  // end of 4th line-segment.
+          default: 
+            console.log("VBObox0.appendGroundGrid() !ERROR! **Y** line out-of-bounds!!\n\n");
+          break;
+        } // Set all values for this vertex:
+        vertSet[idx  ] = xNow;            // x value
+        vertSet[idx+1] = yNow;            // y value
+        vertSet[idx+2] = 0.0;             // z value
+        vertSet[idx+3] = 1.0;             // w;
+        vertSet[idx+4] = colrNow[0];  // r
+        vertSet[idx+5] = colrNow[1];  // g
+        vertSet[idx+6] = colrNow[2];  // b
+        vertSet[idx+7] = colrNow[3];  // a;
+      }
+    }
+  
+  
+  /*
+   // SIMPLEST-POSSIBLE vertSet[] array:
+    var vertSet = new Float32Array([    // a vertSet[] array of just 1 green line:
+        -1.00, 0.50, 0.0, 1.0,  	0.0, 1.0, 0.0, 1.0,	// GREEN
+         1.00, 0.50, 0.0, 1.0,  	0.0, 1.0, 0.0, 1.0,	// GREEN
+       ], this.vboContents.length);
+    vertCount = 2;
+  */
+    // Make a new array (local) big enough to hold BOTH vboContents & vertSet:
+  var tmp = new Float32Array(this.vboContents.length + vertSet.length);
+    tmp.set(this.vboContents, 0);     // copy old VBOcontents into tmp, and
+    tmp.set(vertSet,this.vboContents.length); // copy new vertSet just after it.
+    this.vboVerts += vertCount;       // find number of verts in both.
+    this.vboContents = tmp;           // REPLACE old vboContents with tmp
+    // (and JS will garbage-collect the old contents)
+  }
+  
+  VBObox0.prototype.appendLineCube = function() {
+  //==============================================================================
+  // Create a set of vertices to draw grid of colored lines that form a unit
+  // cube,  centered at x=y=z=0, (vertices at +/- 1 coordinates)
+  // and append those vertices to this.vboContents array.
+  // Draw these vertices with with gl.GL_LINES primitive.
+  
+  //
+  //
+  // 		********   YOU WRITE THIS! ********
+  //
+  //
+  //
+  
+  }
+  VBObox0.prototype.appendLineSphere = function() {
+  //==============================================================================
+  // Create a set of vertices to draw grid of colored lines that form a unit
+  // sphere
+  // centered at x=y=z=0, and append those vertices to this.vboContents array.
+  // Draw these vertices with with gl.GL_LINES primitive.
+  
+  //
+  //
+  // 		********   YOU WRITE THIS! ********
+  //
+  //
+  //
+  
+  }
+  
 VBObox0.prototype.init = function() {
 //=============================================================================
 // Prepare the GPU to use all vertices, GLSL shaders, attributes, & uniforms 
@@ -276,7 +457,7 @@ VBObox0.prototype.init = function() {
   }
   // d2) Find All Uniforms:-----------------------------------------------------
   //Get GPU storage location for each uniform var used in our shader programs: 
-/* 
+ 
 //NONE!----here's what we would use if mvpMatrix was not commented-out in shader:
 	this.u_mvpMatLoc = gl.getUniformLocation(this.shaderLoc, 'u_mvpMat');
   if (!this.u_mvpMatLoc) { 
@@ -284,7 +465,7 @@ VBObox0.prototype.init = function() {
     						'.init() failed to get GPU location for u_mvpMat uniform');
     return;
   }  
-*/
+
 }
 
 VBObox0.prototype.switchToMe = function() {
@@ -375,16 +556,39 @@ VBObox0.prototype.adjust = function() {
   						'.adjust() call you needed to call this.switchToMe()!!');
   }  
 	// Adjust values for our uniforms,
-/* NO UNIFORMS YET!
-  this.mvpMat.rotate(g_angleNow0, 0, 0, 1);	  // rotate drawing axes,
-  this.mvpMat.translate(0.35, 0, 0);		// then translate them.
-  
+
+  //this.mvpMat.rotate(g_angleNow0, 0, 0, 1);	  // rotate drawing axes,
+  //this.mvpMat.translate(0.35, 0, 0);		// then translate them.
+  // NEW glMatrix version:
+  // SURPRISE! the mat4 'perspective()' and 'lookAt()' fcns ignore / overwrite
+  //            any previous matrix contents. You have to do your own matrix
+  //            multiply to combine the perspective and view matrices:
+  var camProj = mat4.create();   
+  // We can either use the perspective() function, like this:       
+ /* mat4.perspective(camProj,             // out
+              glMatrix.toRadian(90.0),  // fovy in radians 
+              1.0,                      // aspect ratio width/height
+              0.1,                      // znear
+              100.0);                  // zfar
+ */
+  // or use the frustum() function, like this:
+  mat4.frustum(camProj, -1.0, 1.0,    // left, right
+    -1.0, 1.0,    // bottom, top
+    1.0, 100.0);   // near, far
+
+var camView = mat4.create();
+mat4.lookAt(camView, gui.camEyePt, gui.camAimPt, gui.camUpVec);
+mat4.multiply(this.mvpMat, camProj, camView);
+// mvpMat now set for WORLD drawing axes. 
+// Our ray-tracer's ground-plane grid is at z = zGrid = -5;
+var trans = vec3.fromValues(0,0,-5);
+mat4.translate(this.mvpMat, this.mvpMat, trans );
   //  Transfer new uniforms' values to the GPU:-------------
   // Send  new 'mvpMat' values to the GPU's 'u_mvpMat' uniform: 
   gl.uniformMatrix4fv(this.u_mvpMatLoc,	// GPU location of the uniform
   										false, 				    // use matrix transpose instead?
-  										this.mvpMat.elements);	// send data from Javascript.
-*/
+  										this.mvpMat);	// send data from Javascript.
+
   // Adjust the attributes' stride and offset (if necessary)
   // (use gl.vertexAttribPointer() calls and gl.enableVertexAttribArray() calls)
 
@@ -400,7 +604,7 @@ VBObox0.prototype.draw = function() {
   						'.draw() call you needed to call this.switchToMe()!!');
   }  
   // ----------------------------Draw the contents of the currently-bound VBO:
-  gl.drawArrays(gl.TRIANGLES, 	    // select the drawing primitive to draw,
+  gl.drawArrays(gl.LINES, 	    // select the drawing primitive to draw,
                   // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
                   //          gl.TRIANGLES, gl.TRIANGLE_STRIP, ...
   								0, 								// location of 1st vertex to draw;
@@ -621,7 +825,8 @@ VBObox1.prototype.init = function() {
     						'.init() Failed to find GPU location for texture u_Sampler');
     return -1;	// error exit.
   }
-
+  g_myPic.setTestPattern(0);
+    /*
 // **** REPLACE THIS WITH CImgBuf object ****...
 	// ---------------------------------
 	// Make a 2D colorful L-shaped test image:
@@ -645,7 +850,7 @@ VBObox1.prototype.init = function() {
   	  	this.myImg[idx +2] = 255 -i -j;								// 0 <= blu <= 255
     	}
     }
-
+*/
 /*
 // SECOND test image:
     for(var j=0; j< this.imgYmax; j++) {					// for the j-th row of pixels
@@ -684,6 +889,7 @@ VBObox1.prototype.init = function() {
   // the rayImg.iBuf member is a uint8 array; data source for WebGL texture map
 */
 
+
   // Enable texture unit0 for our use
   gl.activeTexture(gl.TEXTURE0);
   // Bind the texture object we made in initTextures() to the target
@@ -692,12 +898,12 @@ VBObox1.prototype.init = function() {
   gl.texImage2D(gl.TEXTURE_2D,    //  'target'--the use of this texture
   						0, 									//  MIP-map level (default: 0)
   						gl.RGB, 					  // GPU's data format (RGB? RGBA? etc)
-							this.imgXmax,		// texture image width in pixels,
-							this.imgYmax,		// texture image height in pixels,
+							g_myPic.xSiz,		    // texture image width in pixels,
+							g_myPic.ySiz,		    // texture image height in pixels,
 							0,									// byte offset to start of data
   						gl.RGB, 					  // source/input data format (RGB? RGBA?)
   						gl.UNSIGNED_BYTE,	  // data type for each color channel				
-							this.myImg);				// 80bit RGB image data source.
+							g_myPic.iBuf);				// 8bit RGB image data source.
   // Set the WebGL texture-filtering parameters
   gl.texParameteri(gl.TEXTURE_2D,		// texture-sampling params: 
   						     gl.TEXTURE_MIN_FILTER, 
@@ -877,11 +1083,11 @@ VBObox1.prototype.reload = function() {
   gl.texSubImage2D(gl.TEXTURE_2D, 	//  'target'--the use of this texture
   							0, 							//  MIP-map level (default: 0)
   							0,0,						// xoffset, yoffset (shifts the image)
-								this.imgXmax,			// image width in pixels,
-								this.imgYmax,			// image height in pixels,
+                g_myPic.xSiz,
+                g_myPic.ySiz,
   							gl.RGB, 				// source/input data format (RGB? RGBA?)
   							gl.UNSIGNED_BYTE, 	// data type for each color channel				
-								this.myImg);	// data source.
+								g_myPic.iBuf);	// data source.
 }
 
 

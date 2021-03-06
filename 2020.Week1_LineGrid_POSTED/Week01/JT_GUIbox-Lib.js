@@ -182,6 +182,26 @@ GUIbox.prototype.init = function() {
 		document.getElementById('MouseDragResult').innerHTML=
 			'Mouse Drag totals (CVV coords):\t' + 
 			this.xMdragTot.toFixed(5) + ', \t' + this.yMdragTot.toFixed(5);	
+
+			this.camYawInit = Math.PI/2.0;
+			this.camYaw = this.camYawInit;
+			this.camPitchInit = -Math.PI/2.0;
+			this.camPitch = this.camPitchInit;
+			this.camEyePt = vec4.fromValues(0,0,0,1);
+			this.camAimPt = vec4.fromValues(
+				this.camEyePt[0] + Math.cos(this.camPitch) * Math.cos(this.camYaw),
+				this.camEyePt[1] + Math.cos(this.camPitch) * Math.sin(this.camYaw),
+				this.camEyePt[2] + Math.sin(this.camPitch),
+				1.0);
+			this.camUpVec = vec4.fromValues(
+				Math.cos(this.camYaw)*Math.cos(this.camPitch + Math.PI/2),  // x 
+			    Math.sin(this.camYaw)*Math.cos(this.camPitch + Math.PI/2),  // y
+								      Math.sin(this.camPitch + Math.PI/2),  // z
+								      0.0);
+			this.camSpeed = 0.5;
+			
+
+
 }
 
 GUIbox.prototype.mouseDown = function(mev) {
@@ -228,7 +248,42 @@ GUIbox.prototype.mouseMove = function(mev) {
   // Report mouse-drag totals on our webpage:
 	document.getElementById('MouseDragResult').innerHTML=
 			'Mouse Drag totals (CVV coords):\t' + 
-			this.xMdragTot.toFixed(5) + ', \t' + this.yMdragTot.toFixed(5);	
+			this.xMdragTot.toFixed(5) + ', \t' + this.yMdragTot.toFixed(5)+
+			'<br>camYaw:' + (this.camYaw*(180/Math.PI)).toFixed(3) + 'deg.; camPitch:' + 
+			              (this.camPitch*(180/Math.PI)).toFixed(3) + 'deg.';
+	this.camYaw = this.camYawInit + this.xMdragTot * 1.0;
+	this.camPitch = this.camPitchInit - this.yMdragTot * 1.0;
+	if(this.camYaw < -Math.PI) {  // keep yaw angle values between +/- PI
+		this.camYaw += 2*Math.PI;   
+		}
+	  else if(this.camYaw > Math.PI) {
+		this.camYaw -= 2*Math.PI;
+		}
+	  if(this.camPitch < -Math.PI/2) {    // ALSO, don't let pitch go below -90deg 
+		this.camPitch = -Math.PI/2;       // (-Z aiming direction)
+		// We want y-axis mouse-dragging to set camera pitch. When pitch reaches its
+		// lowermost limit of -PI/2, what's the mouse-drag value yMdragTot?
+		// camPitch = camPitchInit - yMdragTot == -PI/2; add yMdragTot to both sides:
+		//            camPitchInit == yMdragTot -PI/2;  then add PI/2 to both sides:
+		//            (camPitchInit + PI/2) == yMdragTot;  
+		// THUS ANY mouse-drag totals > than this amount will get ignored!
+		this.yMdragTot = this.camPitchInit + Math.PI/2; // upper limit on yMdragTot.
+		}
+	  else if(this.camPitch > Math.PI/2) {  // AND never let pitch go above +90deg:
+		this.camPitch = Math.PI/2;          // (+Z aiming direction)
+		this.yMdragTot = this.camPitchInit -Math.PI/2; // lower limit on yMdragTot.
+		}
+	// update camera aim point: using spherical coords:
+	this.camAimPt[0] = this.camEyePt[0] + Math.cos(this.camYaw)*Math.cos(this.camPitch);  // x
+	this.camAimPt[1] = this.camEyePt[1] + Math.sin(this.camYaw)*Math.cos(this.camPitch);  // y
+	this.camAimPt[2] = this.camEyePt[2] + Math.sin(this.camPitch); // z
+	// update the 'up' vector too (pitch an additional +90 degrees)
+	this.camUpVec[0] = Math.cos(this.camYaw)*Math.cos(this.camPitch + Math.PI/2); 
+	this.camUpVec[1] = Math.sin(this.camYaw)*Math.cos(this.camPitch + Math.PI/2);
+	this.camUpVec[2] = Math.sin(this.camPitch + Math.PI/2); 
+	
+	drawAll();
+
 }
 
 GUIbox.prototype.mouseUp = function(mev) {
@@ -406,34 +461,38 @@ GUIbox.prototype.keyDown = function(kev) {
 */
   // On webpage, report EVERYTHING about this key-down event:              
 	document.getElementById('KeyDown').innerHTML = ''; // clear old result
-  document.getElementById('KeyMod').innerHTML = ''; 
-  document.getElementById('KeyMod' ).innerHTML = 
+    document.getElementById('KeyMod').innerHTML = ''; 
+  	document.getElementById('KeyMod' ).innerHTML = 
         "   --kev.code:"+kev.code   +"      --kev.key:"+kev.key+
     "<br>--kev.ctrlKey:"+kev.ctrlKey+" --kev.shiftKey:"+kev.shiftKey+
     "<br> --kev.altKey:"+kev.altKey +"  --kev.metaKey:"+kev.metaKey;  
 
-  switch(kev.code) {
+	switch(kev.code) {
     case "Digit0":
-			document.getElementById('KeyDown').innerHTML =  
-			'GUIbox.KeyDown() digit 0 key.(UNUSED)';          // print on webpage,
-			console.log("digit 0 key.(UNUSED)");              // print on console.
-      break;
+		document.getElementById('KeyDown').innerHTML =  
+		'GUIbox.KeyDown() digit 0 key.(UNUSED)';          // print on webpage,
+		console.log("digit 0 key.(UNUSED)");              // print on console.
+    break;
     case "Digit1":
-			document.getElementById('KeyDown').innerHTML =  
-			'mguiBox.KeyDown() digit 1 key.(UNUSED)';         // print on webpage,
-			console.log("digit 1 key.(UNUSED)");              // print on console.
-      break;
+		document.getElementById('KeyDown').innerHTML =  
+		'mguiBox.KeyDown() digit 1 key.(UNUSED)';         // print on webpage,
+		console.log("digit 1 key.(UNUSED)");              // print on console.
+    break;
 		//------------------Ray Tracing---------------------- 
     case "KeyC":                // Clear the ray-traced image
-			document.getElementById('KeyDown').innerHTML =  
-			'GUIbox.KeyDown() c/C key: CLEAR the ray-traced image buffer.';// print on webpage,
-			console.log("c/C: CLEAR ray-traced img buf");     // print on console,
-      break;
+		document.getElementById('KeyDown').innerHTML =  
+		'GUIbox.KeyDown() c/C key: CLEAR the ray-traced image buffer.';// print on webpage,
+		console.log("c/C: CLEAR ray-traced img buf");     // print on console,
+    break;
     case "KeyT":                                // 't' or 'T' key: ray-trace!
-		  document.getElementById('KeyDown').innerHTML =  
-		  'GUIbox.KeyDown() t/T key: TRACE a new image!';	    // print on webpage,
+		document.getElementById('KeyDown').innerHTML =  
+		'GUIbox.KeyDown() t/T key: TRACE a new image!';	    // print on webpage,
 	    console.log("t/T key: TRACE a new image!");         // print on console,
-      break;
+		g_myPic.makeRayTracedImage();
+		rayView.switchToMe();
+		rayView.reload();
+		drawAll();
+    break;
 		//------------------WASD navigation-----------------
 		case "KeyA":
 			document.getElementById('KeyDown').innerHTML =  
@@ -489,4 +548,62 @@ GUIbox.prototype.keyUp = function(kev) {
 // You probably don't want to use this ('this.keyDown()' explains why)...
 
 	console.log('myKeyUp()--key='+kev.key+' released.');
+	//	console.log('GUIbox.keyUp()--keyCode='+kev.keyCode+' released.');
+}
+
+GUIbox.prototype.camFwd = function() {
+//==============================================================================
+// Move the camera FORWARDS in the aiming direction, but without changing
+// the aiming direction. (If you're tilting up or down, you'll move up or down)
+  var fwd = vec4.create();
+  vec4.sub(fwd, this.camAimPt, this.camEyePt);  // Eye-to-Aim point vector (w=0)
+  vec4.normalize(fwd, fwd);                     // make vector unit-length
+                                                // (careful! normalize includes w)
+  vec4.scale(fwd, fwd, this.camSpeed);          // scale length to set velocity
+  vec4.add(this.camAimPt, this.camAimPt, fwd);  // add to BOTH points.
+  vec4.add(this.camEyePt, this.camEyePt, fwd);
+  drawAll();          // show new result on-screen.
+}
+
+GUIbox.prototype.camRev = function() {
+//==============================================================================
+// Move the camera BACKWARDS, in the reverse aiming direction (don't change aim)
+  var rev = vec4.create();
+  vec4.sub(rev,this.camEyePt, this.camAimPt);   // Aim-to-Eye point vector (w=0)
+  vec4.normalize(rev,rev);                      // make it unit-length
+                                                // (careful! normalize includes w)
+  vec4.scale(rev, rev, this.camSpeed);          // scale length to set velocity
+  vec4.add(this.camAimPt, this.camAimPt, rev);  // add to BOTH points.
+  vec4.add(this.camEyePt, this.camEyePt, rev);
+  drawAll();          // show new result on-screen.
+}
+
+GUIbox.prototype.camStrafe_L = function() {
+//==============================================================================
+// Move horizontally left-wards, perpendicular to aiming direction, without
+// changing aiming direction or height above ground.
+  // 'rtSide' vector points rightwards, perpendicular to aiming direction.
+  var rtSide = vec4.fromValues(  Math.sin(this.camYaw), // x
+                                -Math.cos(this.camYaw), // y
+                                0.0, 0.0); // z, w (==0; vector, not point!)
+  // rtSide is already unit length; no need to normalize.
+  vec4.scale(rtSide, rtSide, -this.camSpeed);  // scale length to set velocity,
+  vec4.add(this.camAimPt, this.camAimPt, rtSide);  // add to BOTH points.
+  vec4.add(this.camEyePt, this.camEyePt, rtSide);
+  drawAll();
+}
+
+GUIbox.prototype.camStrafe_R = function() {
+//==============================================================================
+// Move horizontally left-wards, perpendicular to aiming direction, without
+// changing aiming direction or height above ground.
+  // 'rtSide' vector points rightwards, perpendicular to aiming direction.
+  var rtSide = vec4.fromValues(  Math.sin(this.camYaw), // x
+                                -Math.cos(this.camYaw), // y
+                                0,0); // z,w  (vector, not point; w=0)
+  // rtSide is already unit length; no need to normalize.
+  vec4.scale(rtSide, rtSide, this.camSpeed);  // scale length to set velocity,
+  vec4.add(this.camAimPt, this.camAimPt, rtSide);  // add to BOTH points.
+  vec4.add(this.camEyePt, this.camEyePt, rtSide);
+  drawAll();
 }

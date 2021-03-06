@@ -220,8 +220,8 @@ function CCamera() {
 	this.iTop =   1.0; 
 
 // And the lower-left-most corner of the image is at (u,v,n) = (iLeft,iBot,-iNear).
-	this.xmax = 256;			// horizontal,
-	this.ymax = 256;			// vertical image resolution.
+	this.xmax = g_myPic.xSiz;			// horizontal,
+	this.ymax = g_myPic.ySiz;			// vertical image resolution.
 // To ray-trace an image of xmax,ymax pixels, divide this rectangular image 
 // plane into xmax,ymax rectangular tiles, and shoot eye-rays from the camera's
 // center-of-projection through those tiles to find scene color values.  
@@ -240,6 +240,13 @@ function CCamera() {
 	this.vfrac = (this.iTop   - this.iBot ) / this.ymax;	// pixel tile's height.
 }
 
+CCamera.prototype.rayFrustrum = function(left,right,bot,top,near){
+	this.iLeft = left;
+	this.iRight = right;
+  	this.iBot = bot;
+  	this.iTop = top;
+  	this.iNear = near;
+	}
 CCamera.prototype.setEyeRay = function(myeRay, xpos, ypos) {
 //=============================================================================
 // Set values of a CRay object to specify a ray in world coordinates that 
@@ -295,7 +302,6 @@ var posV = this.iBot  + ypos*this.vfrac;	// V coord,
 CCamera.prototype.printMe = function() {
 //=============================================================================
 // print CCamera object's current contents in console window:
-
 	  console.log("you called CCamera.printMe()");
 	//
 	// YOU WRITE THIS (see CRay.prototype.printMe() function above)
@@ -384,16 +390,24 @@ CGeom.prototype.traceGrid = function(inRay) {
 //            the grid. Use 'lineColor.
 //        otherwise, the ray hit BETWEEN the lines; use 'gapColor'
 
-/*
-	*
-	*
-	*
-	  YOU WRITE THIS!  
-	*
-	*
-	*
-	*
-	*/
+	var t0 = (this.zGrid - inRay.orig[2])/inRay.dir[2];
+	if(t0<0){
+		retrun -1;
+	}
+	var hitPt = vec4.fromValues(inRay.orig[0] + inRay.dir[0]*t0,
+								inRay.orig[1] + inRay.dir[1]*t0,
+								this.zGrid,1.0)
+	var loc = hitPt[0] / this.xgap;
+	if(hitPt[0] < 0) loc = -loc;
+	if(loc%1 < this.lineWidth){
+		return 1;
+	}
+	loc = hitPt[1] / this.ygap;     // how many 'ygaps' from origin?
+  	if(hitPt[1] < 0) loc = -loc;    // keep >0 to form double-width line at xaxis.
+  	if(loc%1 < this.lineWidth) {   // hit a line of constant-y?
+      return 1;       // yes.
+    }
+  	return 0;
 }
 
 function CImgBuf(wide, tall) {
@@ -574,7 +588,7 @@ CImgBuf.prototype.makeRayTracedImage = function() {
   this.float2int();		// create integer image from floating-point buffer.
 }
 
-/*
+
 function CScene() {
 //=============================================================================
 // A complete ray tracer object prototype (formerly a C/C++ 'class').
@@ -694,4 +708,4 @@ function CHitList() {
 	//
 	//
 }
-*/
+
