@@ -286,6 +286,31 @@ var posV = this.iBot  + ypos*this.vfrac;	// V coord,
 //  and the N coord is always -1, at the image-plane (zNear) position.
 // Then convert this point location to world-space X,Y,Z coords using our 
 // camera's unit-length coordinate axes uAxis,vAxis,nAxis
+
+vec4.subtract(this.nAxis, gui.camEyePt, gui.camAimPt);
+vec4.normalize(this.nAxis, this.nAxis);
+
+vec3.cross(this.uAxis, gui.camUpVec, this.nAxis);
+vec4.normalize(this.uAxis, this.uAxis);
+
+vec3.cross(this.vAxis,this.nAxis,this.uAxis);
+/*
+this.uAxis[0] = Math.cos(gui.camPitch+ Math.PI/2)*Math.cos(gui.camYaw);
+this.uAxis[1] = Math.cos(gui.camPitch)*Math.sin(gui.camYaw);
+this.uAxis[2] = Math.sin(gui.camPitch);
+
+this.vAxis[0] = Math.cos(gui.camPitch)*Math.cos(gui.camYaw + Math.PI/2);
+this.vAxis[1] = Math.cos(gui.camPitch)*Math.sin(gui.camYaw + Math.PI/2);
+this.vAxis[2] = Math.sin(gui.camPitch);
+
+this.nAxis[0] = Math.cos(gui.camPitch+ Math.PI/2)*Math.cos(gui.camYaw);
+this.nAxis[1] = Math.cos(gui.camPitch+ Math.PI/2)*Math.sin(gui.camYaw);
+this.nAxis[2] = Math.sin(gui.camPitch);
+
+console.log(gui.camYaw);
+console.log(gui.camPitch);
+*/
+
  xyzPos = vec4.create();    // make vector 0,0,0,0.	
 	vec4.scaleAndAdd(xyzPos, xyzPos, this.uAxis, posU); // xyzPos += Uaxis*posU;
 	vec4.scaleAndAdd(xyzPos, xyzPos, this.vAxis, posV); // xyzPos += Vaxis*posU;
@@ -392,7 +417,7 @@ CGeom.prototype.traceGrid = function(inRay) {
 
 	var t0 = (this.zGrid - inRay.orig[2])/inRay.dir[2];
 	if(t0<0){
-		retrun -1;
+		return -1;
 	}
 	var hitPt = vec4.fromValues(inRay.orig[0] + inRay.dir[0]*t0,
 								inRay.orig[1] + inRay.dir[1]*t0,
@@ -577,7 +602,7 @@ CImgBuf.prototype.makeRayTracedImage = function() {
 				vec4.copy(colr, myGrid.lineColor);
 			}
 			else {
-				vec4.copy(colr, myGrid.lineColor);
+				vec4.copy(colr, myGrid.skyColor);
 			}
 	  		idx = (j*this.xSiz + i)*this.pixSiz;	// Array index at pixel (i,j) 
  	  		this.fBuf[idx   ] = colr[0];	// bright blue
