@@ -488,7 +488,7 @@ GUIbox.prototype.keyDown = function(kev) {
 		document.getElementById('KeyDown').innerHTML =  
 		'GUIbox.KeyDown() t/T key: TRACE a new image!';	    // print on webpage,
 	    console.log("t/T key: TRACE a new image!");         // print on console,
-		g_myPic.makeRayTracedImage();
+		g_myPic.makeRayTracedImage(g_AAcode,g_isJitter);
 		rayView.switchToMe();
 		rayView.reload();
 		drawAll();

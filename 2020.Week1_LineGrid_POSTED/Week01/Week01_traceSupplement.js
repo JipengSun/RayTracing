@@ -240,7 +240,7 @@ function CCamera() {
 	this.vfrac = (this.iTop   - this.iBot ) / this.ymax;	// pixel tile's height.
 }
 
-CCamera.prototype.rayFrustrum = function(left,right,bot,top,near){
+CCamera.prototype.rayFrustum = function(left,right,bot,top,near){
 	this.iLeft = left;
 	this.iRight = right;
   	this.iBot = bot;
@@ -280,41 +280,41 @@ CCamera.prototype.setEyeRay = function(myeRay, xpos, ypos) {
 //     outer limits of the pixel's tile or 'neighborhood'. Google: antialiasing 
 //     bilinear filter, Mitchell-Netravali piecewise bicubic prefilter, etc).
 
-// Convert image-plane location (xpos,ypos) in the camera's U,V,N coords:
-var posU = this.iLeft + xpos*this.ufrac; 	// U coord,
-var posV = this.iBot  + ypos*this.vfrac;	// V coord,
-//  and the N coord is always -1, at the image-plane (zNear) position.
-// Then convert this point location to world-space X,Y,Z coords using our 
-// camera's unit-length coordinate axes uAxis,vAxis,nAxis
+	// Convert image-plane location (xpos,ypos) in the camera's U,V,N coords:
+	var posU = this.iLeft + xpos*this.ufrac; 	// U coord,
+	var posV = this.iBot  + ypos*this.vfrac;	// V coord,
+	//  and the N coord is always -1, at the image-plane (zNear) position.
+	// Then convert this point location to world-space X,Y,Z coords using our 
+	// camera's unit-length coordinate axes uAxis,vAxis,nAxis
 
-vec4.subtract(this.nAxis, gui.camEyePt, gui.camAimPt);
-vec4.normalize(this.nAxis, this.nAxis);
+	vec4.subtract(this.nAxis, gui.camEyePt, gui.camAimPt);
+	vec4.normalize(this.nAxis, this.nAxis);
 
-vec3.cross(this.uAxis, gui.camUpVec, this.nAxis);
-vec4.normalize(this.uAxis, this.uAxis);
+	vec3.cross(this.uAxis, gui.camUpVec, this.nAxis);
+	vec4.normalize(this.uAxis, this.uAxis);
 
-vec3.cross(this.vAxis,this.nAxis,this.uAxis);
-/*
-this.uAxis[0] = Math.cos(gui.camPitch+ Math.PI/2)*Math.cos(gui.camYaw);
-this.uAxis[1] = Math.cos(gui.camPitch)*Math.sin(gui.camYaw);
-this.uAxis[2] = Math.sin(gui.camPitch);
+	vec3.cross(this.vAxis,this.nAxis,this.uAxis);
+	/*
+	this.uAxis[0] = Math.cos(gui.camPitch+ Math.PI/2)*Math.cos(gui.camYaw);
+	this.uAxis[1] = Math.cos(gui.camPitch)*Math.sin(gui.camYaw);
+	this.uAxis[2] = Math.sin(gui.camPitch);
 
-this.vAxis[0] = Math.cos(gui.camPitch)*Math.cos(gui.camYaw + Math.PI/2);
-this.vAxis[1] = Math.cos(gui.camPitch)*Math.sin(gui.camYaw + Math.PI/2);
-this.vAxis[2] = Math.sin(gui.camPitch);
+	this.vAxis[0] = Math.cos(gui.camPitch)*Math.cos(gui.camYaw + Math.PI/2);
+	this.vAxis[1] = Math.cos(gui.camPitch)*Math.sin(gui.camYaw + Math.PI/2);
+	this.vAxis[2] = Math.sin(gui.camPitch);
 
-this.nAxis[0] = Math.cos(gui.camPitch+ Math.PI/2)*Math.cos(gui.camYaw);
-this.nAxis[1] = Math.cos(gui.camPitch+ Math.PI/2)*Math.sin(gui.camYaw);
-this.nAxis[2] = Math.sin(gui.camPitch);
+	this.nAxis[0] = Math.cos(gui.camPitch+ Math.PI/2)*Math.cos(gui.camYaw);
+	this.nAxis[1] = Math.cos(gui.camPitch+ Math.PI/2)*Math.sin(gui.camYaw);
+	this.nAxis[2] = Math.sin(gui.camPitch);
 
-console.log(gui.camYaw);
-console.log(gui.camPitch);
-*/
+	console.log(gui.camYaw);
+	console.log(gui.camPitch);
+	*/
 
- xyzPos = vec4.create();    // make vector 0,0,0,0.	
+	xyzPos = vec4.create();    // make vector 0,0,0,0.	
 	vec4.scaleAndAdd(xyzPos, xyzPos, this.uAxis, posU); // xyzPos += Uaxis*posU;
 	vec4.scaleAndAdd(xyzPos, xyzPos, this.vAxis, posV); // xyzPos += Vaxis*posU;
-  vec4.scaleAndAdd(xyzPos, xyzPos, this.nAxis, -this.iNear); 
+	vec4.scaleAndAdd(xyzPos, xyzPos, this.nAxis, -this.iNear); 
   // 																								xyzPos += Naxis * (-1)
   // The eyeRay we want consists of just 2 world-space values:
   //  	-- the ray origin == camera origin == eyePt in XYZ coords
@@ -573,7 +573,7 @@ CImgBuf.prototype.printPixAt = function(xpix,ypix) {
 		//
 }
 
-CImgBuf.prototype.makeRayTracedImage = function() {
+CImgBuf.prototype.makeRayTracedImage = function(AAcode,isJitter) {
 //=============================================================================
 // TEMPORARY!!!! 
 // THIS FUNCTION SHOULD BE A MEMBER OF YOUR CScene OBJECTS(when you make them),
@@ -583,34 +583,51 @@ CImgBuf.prototype.makeRayTracedImage = function() {
 
 //	console.log("You called CImgBuf.makeRayTracedImage!")
 
-  var eyeRay = new CRay();	// the ray we trace from our camera for each pixel
-  var myCam = new CCamera();	// the 3D camera that sets eyeRay values
-  var myGrid = new CGeom(JT_GNDPLANE);
-  var colr = vec4.create();	// floating-point RGBA color value
-	var hit = 0;
+  	var eyeRay = new CRay();	// the ray we trace from our camera for each pixel
+  	var myCam = new CCamera();	// the 3D camera that sets eyeRay values
+  	var myGrid = new CGeom(JT_GNDPLANE);
+  	var colr = vec4.create();	// floating-point RGBA color value
+  	var hit = 0;
 	var idx = 0;	// CImgBuf array index(i,j) == (j*this.xSiz +i)*this.pixSiz;
-	var i,j;
-  for(j=0; j< this.ySiz; j++) {     // for the j-th row of pixels.
-  	for(i=0; i< this.xSiz; i++) {	 // and the i-th pixel on that row,
-			myCam.setEyeRay(eyeRay,i,j);						  // create ray for pixel (i,j)
-//if(i==0 && j==0) console.log('eyeRay:', eyeRay); // print first ray
-			hit = myGrid.traceGrid(eyeRay);						// trace ray to the grid
-			if(hit==0) {
-				vec4.copy(colr, myGrid.gapColor);
+	var i,j,m,n;
+	var subgap = 1.0/AAcode;
+	for(j=0; j< this.ySiz; j++) {     // for the j-th row of pixels.
+		for(i=0; i< this.xSiz; i++) {	 // and the i-th pixel on that row,
+			for(m=0;m< AAcode; m++){
+				for(n=0;n< AAcode;n++){
+					if(isJitter){
+						myCam.setEyeRay(eyeRay,i+(m+Math.random())*subgap,j+(n+Math.random())*subgap);
+					}
+					else{
+						myCam.setEyeRay(eyeRay,i+(m+0.5)*subgap,j+(n+0.5)*subgap);
+					}
+					hit = myGrid.traceGrid(eyeRay);
+					if(hit==0){
+						vec4.add(colr,colr,myGrid.gapColor);
+					}
+					else if (hit==1){
+						vec4.add(colr,colr,myGrid.lineColor);
+					}
+					else{
+						vec4.add(colr,colr,myGrid.skyColor);
+					}
+				}
 			}
-			else if (hit==1) {
-				vec4.copy(colr, myGrid.lineColor);
+			vec4.scale(colr,colr,(1/(AAcode*AAcode)));
+			/*
+			if(i==200&&j==200){
+				console.log(AAcode)
+				console.log(colr)
 			}
-			else {
-				vec4.copy(colr, myGrid.skyColor);
+			*/
+			idx = (j*this.xSiz + i)*this.pixSiz;	// Array index at pixel (i,j) 
+			this.fBuf[idx   ] = colr[0];	// bright blue
+			this.fBuf[idx +1] = colr[1];
+			this.fBuf[idx +2] = colr[2];
+			var colr = vec4.create();
 			}
-	  		idx = (j*this.xSiz + i)*this.pixSiz;	// Array index at pixel (i,j) 
- 	  		this.fBuf[idx   ] = colr[0];	// bright blue
-	  		this.fBuf[idx +1] = colr[1];
-	  		this.fBuf[idx +2] = colr[2];
-	  	}
-  	}
-  this.float2int();		// create integer image from floating-point buffer.
+		}
+	this.float2int();		// create integer image from floating-point buffer.
 }
 
 
