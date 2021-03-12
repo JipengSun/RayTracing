@@ -197,10 +197,17 @@ function CCamera() {
 	this.eyePt = vec4.fromValues(0,0,0,1);
 
 	// LOOK STRAIGHT DOWN
-  this.uAxis = vec4.fromValues(1,0,0,0);	// camera U axis == world x axis			
-  this.vAxis = vec4.fromValues(0,1,0,0);	// camera V axis == world y axis
-  this.nAxis = vec4.fromValues(0,0,1,0);	// camera N axis == world z axis.
+  	this.uAxis = vec4.fromValues(1,0,0,0);	// camera U axis == world x axis			
+  	this.vAxis = vec4.fromValues(0,1,0,0);	// camera V axis == world y axis
+  	this.nAxis = vec4.fromValues(0,0,1,0);	// camera N axis == world z axis.
 		  	// (and thus we're gazing down the -Z axis with default camera). 
+  	vec4.subtract(this.nAxis, gui.camEyePt, gui.camAimPt);
+	vec4.normalize(this.nAxis, this.nAxis);
+
+	vec3.cross(this.uAxis, gui.camUpVec, this.nAxis);
+	vec4.normalize(this.uAxis, this.uAxis);
+
+	vec3.cross(this.vAxis,this.nAxis,this.uAxis);
 
 // b) -- Camera 'intrinsic' parameters that set the camera's optics and images.
 // They define the camera's image frustum: its image plane is at N = -znear  
@@ -286,7 +293,7 @@ CCamera.prototype.setEyeRay = function(myeRay, xpos, ypos) {
 	//  and the N coord is always -1, at the image-plane (zNear) position.
 	// Then convert this point location to world-space X,Y,Z coords using our 
 	// camera's unit-length coordinate axes uAxis,vAxis,nAxis
-
+/*
 	vec4.subtract(this.nAxis, gui.camEyePt, gui.camAimPt);
 	vec4.normalize(this.nAxis, this.nAxis);
 
@@ -294,6 +301,7 @@ CCamera.prototype.setEyeRay = function(myeRay, xpos, ypos) {
 	vec4.normalize(this.uAxis, this.uAxis);
 
 	vec3.cross(this.vAxis,this.nAxis,this.uAxis);
+	*/
 	/*
 	this.uAxis[0] = Math.cos(gui.camPitch+ Math.PI/2)*Math.cos(gui.camYaw);
 	this.uAxis[1] = Math.cos(gui.camPitch)*Math.sin(gui.camYaw);
