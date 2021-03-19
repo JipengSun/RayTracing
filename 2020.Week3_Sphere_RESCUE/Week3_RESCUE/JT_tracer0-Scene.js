@@ -2,6 +2,8 @@
 // (JT: why the numbers? counts columns, helps me keep 80-char-wide listings,
 //  lets me see EXACTLY what the editor's 'line-wrap' feature will do.)
 
+//const { vec4 } = require("../../2020.Week1_LineGrid_POSTED/lib/glmatrix");
+
 //===  JT_tracer0-Scene.js  ===================================================
 // The object prototypes here and in related files (and their comments):
 //      JT_tracer1-Camera.js
@@ -104,7 +106,7 @@ function CHit() {
                                 // NOTE: CGeom objects describe their own
                                 // materials and coloring (e.g. CMatl).
 // TEMPORARY: replaces traceGrid(),traceDisk() return value
-this.hitNum = -1; // SKY color
+    this.hitNum = -1; // SKY color
 
     this.t0 = g_t0_MAX;         // 'hit time' parameter for the ray; defines one
                                 // 'hit-point' along ray:   orig + t*dir = hitPt.
@@ -149,7 +151,7 @@ CHit.prototype.init  = function() {
 // clears away all CHit's previously-stored description of any ray hit-point.
   this.hitGeom = -1;            // (reference to)the CGeom object we pierced in
                                 //  in the CScene.item[] array (null if 'none').
-this.hitNum = -1; // TEMPORARY:
+  this.hitNum = -1; // TEMPORARY:
   // holds traceGrid() or traceDisk() result.
 
   this.t0 = g_t0_MAX;           // 'hit time' for the ray; defines one
@@ -265,6 +267,7 @@ function CScene() {
   this.rayCam = new CCamera();	    // the 3D camera that sets eyeRay values:
                                     // this is the DEFAULT camera (256,256).
                                     // (change it with setImgBuf() if needed)
+  this.light = new CLight();
   this.item = [];                   // this JavaScript array holds all the
                                     // CGeom objects of the  current scene.
 }
@@ -359,6 +362,11 @@ CScene.prototype.initScene = function(num) {
       // additional SCENE 0 SETUP   
       //
       //
+      this.light.setPosition(5.0,5.0,5.0);
+      this.light.setColor(1.0,1.0,1.0);
+      this.light.setIllum(5,5,5);
+
+
       break;
     case 1:
     //
@@ -437,69 +445,16 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
           }//-END DIAGNOSTIC--------------------------------
           
           // Trace a new eyeRay thru all CGeom items: ------------------------------
-          myHit.init();     // start by clearing our 'nearest hit-point', and
-          for(k=0; k< this.item.length; k++) {  // for every CGeom in item[] array,
-              this.item[k].traceMe(this.eyeRay, myHit);  // trace eyeRay thru it,
-          }                                   // & keep nearest hit point in myHit.
-          if(myHit.hitNum==0) {  // use myGrid tracing to determine color
-            //vec4.copy(colr, myHit.hitGeom.gapColor);
-            //console.log(colr,myHit.hitGeom.gapColor)
-    
-            vec4.add(colr,colr,myHit.hitGeom.gapColor);
-          }
-          else if (myHit.hitNum==1) {
-            //vec4.copy(colr, myHit.hitGeom.lineColor);
-            vec4.add(colr,colr,myHit.hitGeom.lineColor);
-          }
-          else { // if myHit.hitNum== -1)
-            //vec4.copy(colr, this.skyColor);
-            vec4.add(colr,colr,this.skyColor);
-          }
+          // & keep nearest hit point in myHit.
+          myHit = this.traceRay(myHit,this.eyeRay);
+          // Find eyeRay color from myHit-----------------------------------------
+          colr = this.findShade(myHit,colr)
         }
       }
+      //console.log(colr)
+      //console.log(AAcode)
       vec4.scale(colr,colr,(1/(AAcode*AAcode)));
       //console.log(colr)
-      /*
-
-			this.rayCam.setEyeRay(this.eyeRay,i,j);  // create ray for pixel (i,j)
-      // DIAGNOSTIC:------------------------------------
-      if(i==this.imgBuf.xSiz/2 && j==this.imgBuf.ySiz/4) { 
-        this.pixFlag = 1;                     // pixFlag==1 for JUST ONE pixel
-        console.log("CScene.makeRayTracedImage() is at pixel [",i,", ",j,"].",
-                    "by the cunning use of flags. (Eddie Izzard)");
-        // Eddie Izzard "Dress To Kill"(1998)  
-        //    short: https://youtu.be/uEx5G-GOS1k 
-        //     long: https://youtu.be/hxQYE3E8dEY 
-      }
-      else {
-        this.pixFlag = 0;
-      }//-END DIAGNOSTIC--------------------------------
-      
-  		// Trace a new eyeRay thru all CGeom items: ------------------------------
-      myHit.init();     // start by clearing our 'nearest hit-point', and
-      for(k=0; k< this.item.length; k++) {  // for every CGeom in item[] array,
-          this.item[k].traceMe(this.eyeRay, myHit);  // trace eyeRay thru it,
-      }                                   // & keep nearest hit point in myHit.
-          
-      */
-/*
-      if(this.pixFlag == 1) { // print values during just one selected pixel
-        console.log("flag: x,y:myHit", i,j, myHit);
-      }
-*/
-
-/*
-        // Find eyeRay color from myHit-----------------------------------------
-			if(myHit.hitNum==0) {  // use myGrid tracing to determine color
-				vec4.copy(colr, myHit.hitGeom.gapColor);
-			}
-			else if (myHit.hitNum==1) {
-				vec4.copy(colr, myHit.hitGeom.lineColor);
-			}
-			else { // if myHit.hitNum== -1)
-			  vec4.copy(colr, this.skyColor);
-			}
-*/
 			// Set pixel color in our image buffer------------------------------------
 		  idx = (j*this.imgBuf.xSiz + i)*this.imgBuf.pixSiz;	// Array index at pixel (i,j) 
 	  	this.imgBuf.fBuf[idx   ] = colr[0];	
@@ -509,4 +464,55 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
   	}
   }
   this.imgBuf.float2int();		// create integer image from floating-point buffer.
+}
+CScene.prototype.traceRay = function(myHit,rayNow){
+  // Test all CGeom objects in CScene for ray-intersection. 
+  // Returns CHit object (later for HitList) that holds what and where we hit it.
+  myHit.init();     // start by clearing our 'nearest hit-point', and
+  for(k=0; k< this.item.length; k++) {  // for every CGeom in item[] array,
+      this.item[k].traceMe(rayNow, myHit);  // trace eyeRay thru it,
+  }
+  return myHit;    
+}
+
+CScene.prototype.findShade = function(myHit,colr){
+  // to assess screen color at the end of the ray
+  // it completes the CHit object, gets the final color for the eye ray.
+  // and recursion may start here
+  if(myHit.hitNum== -1){
+    vec4.add(colr,colr,this.skyColor);
+    //console.log(colr);
+  }
+  else{
+  ambiTerm = vec4.create();
+  myMatl = myHit.hitGeom.matl;
+  //console.log(myMatl);
+
+  vec4.add(colr,colr,myMatl.K_emit);
+  vec4.multiply(ambiTerm, this.light.Ia, myMatl.K_ambi);
+  console.log(ambiTerm);
+  vec4.add(colr,colr,ambiTerm);
+  //console.log(colr);
+  }
+  /*
+
+
+  if(myHit.hitNum==0) {  // use myGrid tracing to determine color
+    //vec4.copy(colr, myHit.hitGeom.gapColor);
+    //console.log(colr,myHit.hitGeom.gapColor)
+
+
+    vec4.add(colr,colr,myHit.hitGeom.gapColor);
+  }
+  else if (myHit.hitNum==1) {
+    //vec4.copy(colr, myHit.hitGeom.lineColor);
+    vec4.add(colr,colr,myHit.hitGeom.lineColor);
+  }
+  else { // if (myHit.hitNum== -1)
+    //vec4.copy(colr, this.skyColor);
+    vec4.add(colr,colr,this.skyColor);
+  }
+  */
+  return colr
+
 }

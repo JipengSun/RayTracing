@@ -109,6 +109,7 @@ function CGeom(shapeSelect) {
                                     // normals (where they're easy to find)
                                     // to WORLD-space coords (where we need
                                     // them for lighting calcs.)
+  this.matl = new CMatl(MATL_RED_PLASTIC);
 	
 }
 
@@ -118,6 +119,7 @@ CGeom.prototype.setIdent = function() {
   mat4.identity(this.worldRay2model);  
   mat4.identity(this.normal2world);
 }
+
 
 CGeom.prototype.rayTranslate = function(x,y,z) {
 //==============================================================================

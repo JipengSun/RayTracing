@@ -55,7 +55,7 @@ preView = new VBObox0();		// For WebGLpreview: holds one VBO and its shaders
 rayView = new VBObox1();		// for displaying the ray-tracing results.
 
 //-----------Ray Tracer Objects:---------------
-var g_myPic = new CImgBuf(512,512); // Create a floating-point image-buffer 
+var g_myPic = new CImgBuf(256,256); // Create a floating-point image-buffer 
                         // object to hold the image created by 'g_myScene' object.
                         // CAUTION! WebGL 1.0 texture maps  require power-of-two sizes
                         // (256, 512,1024,2048,etc).
@@ -118,7 +118,7 @@ function main() {
   drawAll();
   //---------OPTIONAL: do all the things done by 't' key; make our initial
   // ray-traced image automatically:
-  g_myScene.makeRayTracedImage(); // run the ray-tracer		
+  //g_myScene.makeRayTracedImage(); // run the ray-tracer		
   rayView.switchToMe(); // be sure OUR VBO & shaders are in use, then
   rayView.reload();     // re-transfer VBO contents and texture-map contents
   drawAll();            // re-draw BOTH viewports.

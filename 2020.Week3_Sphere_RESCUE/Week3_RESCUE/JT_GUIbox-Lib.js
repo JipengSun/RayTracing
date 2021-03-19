@@ -572,22 +572,25 @@ GUIbox.prototype.keyDown = function(kev) {
 		case "ArrowLeft": 	
   			document.getElementById('KeyDown').innerHTML =
   			'GUIbox.KeyDown() Arrow-Left,key='+kev.key;
-			console.log("Arrow-Left key(UNUSED)");
+			  //console.log("Arrow-Left key(UNUSED)");
+
   			break;
 		case "ArrowRight":
   			document.getElementById('KeyDown').innerHTML =
   			'GUIbox.KeyDown() Arrow-Right,key='+kev.key;
-  			console.log("Arrow-Right key(UNUSED)");
+  			//console.log("Arrow-Right key(UNUSED)");
+  
   			break;
 		case "ArrowUp":		
   			document.getElementById('KeyDown').innerHTML =
   			'GUIbox.KeyDown() Arrow-Up,key='+kev.key;
-  			console.log("Arrow-Up key(UNUSED)");
+  			//console.log("Arrow-Up key(UNUSED)");
+        
 			break;
 		case "ArrowDown":
   			document.getElementById('KeyDown').innerHTML =
   			'GUIbox.KeyDown() Arrow-Down,key='+kev.key;
-  			console.log("Arrow-Down key(UNUSED)");
+  			//console.log("Arrow-Down key(UNUSED)");
   			break;	
     default:
   		document.getElementById('KeyDown').innerHTML =
