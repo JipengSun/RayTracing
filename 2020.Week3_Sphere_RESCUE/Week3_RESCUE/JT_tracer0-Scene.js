@@ -362,9 +362,9 @@ CScene.prototype.initScene = function(num) {
       // additional SCENE 0 SETUP   
       //
       //
-      this.light.setPosition(5.0,5.0,5.0);
+      this.light.setPosition(-5.0,-5.0,5.0);
       this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(5,5,5);
+      this.light.setIllum(1,1,1);
 
 
       break;
@@ -485,14 +485,25 @@ CScene.prototype.findShade = function(myHit,colr){
   }
   else{
   ambiTerm = vec4.create();
+  diffTerm = vec4.create();
   myMatl = myHit.hitGeom.matl;
   //console.log(myMatl);
 
   vec4.add(colr,colr,myMatl.K_emit);
+
   vec4.multiply(ambiTerm, this.light.Ia, myMatl.K_ambi);
-  console.log(ambiTerm);
+  //console.log(ambiTerm);
   vec4.add(colr,colr,ambiTerm);
   //console.log(colr);
+
+  Nv = myHit.surfNorm;
+  Lv = vec4.create();
+  vec4.subtract(Lv,this.light.lightPt,myHit.hitPt);
+  vec4.normalize(Lv,Lv);
+  LN = vec4.dot(Nv,Lv);
+  console.log(LN,myHit.hitPt);
+  vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
+  vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
   }
   /*
 
