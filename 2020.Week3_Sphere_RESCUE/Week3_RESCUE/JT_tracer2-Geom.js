@@ -288,7 +288,7 @@ CGeom.prototype.traceGrid = function(inRay, myHit) {
 
 
   // FIND COLOR at model-space hit-point--------------------------------- 
-  this.matl = new CMatl(MATL_BLU_PLASTIC);                      
+  this.matl = new CMatl(MATL_BLACK_PLASTIC);                      
   var loc = myHit.modelHitPt[0] / this.xgap; // how many 'xgaps' from the origin?
   if(myHit.modelHitPt[0] < 0) loc = -loc;    // keep >0 to form double-width line at yaxis.
 //console.log("loc",loc, "loc%1", loc%1, "lineWidth", this.lineWidth);
@@ -303,7 +303,7 @@ CGeom.prototype.traceGrid = function(inRay, myHit) {
     return;
   }
   myHit.hitNum = 0; // No.
-  this.matl = new CMatl(MATL_BLACK_PLASTIC);
+  this.matl = new CMatl(MATL_BLU_PLASTIC);
   //console.log(myHit.matl)
   return;
 }
@@ -372,6 +372,7 @@ CGeom.prototype.traceDisk = function(inRay, myHit) {
   vec4.normalize(myHit.surfNorm, myHit.surfNorm);
   
 //-------------find hit-point color:----------------
+  this.matl.setMatl(MATL_BRASS);
   var loc = myHit.modelHitPt[0] / this.xgap;// how many 'xgaps' from the origin?
   if(myHit.modelHitPt[0] < 0) loc = -loc;   // keep >0 to form double-width line at yaxis.
   if(loc%1 < this.lineWidth) {    // fractional part of loc < linewidth? 
@@ -385,6 +386,7 @@ CGeom.prototype.traceDisk = function(inRay, myHit) {
     return;
   }
   myHit.hitNum = 1;         // No.
+  this.matl.setMatl(MATL_SILVER_SHINY);
   return;
 }
 
@@ -547,6 +549,7 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
   vec4.normalize(myHit.surfNorm, myHit.surfNorm);
   // TEMPORARY: sphere color-setting
   myHit.hitNum = 1;   // in CScene.makeRayTracedImage, use 'this.gapColor'
+  this.matl.setMatl(MATL_GOLD_SHINY);
  
    // DIAGNOSTIC:---------------------------------------------------------------
   if(g_myScene.pixFlag ==1) {   // did we reach the one 'flagged' pixel
