@@ -484,26 +484,26 @@ CScene.prototype.findShade = function(myHit,colr){
     //console.log(colr);
   }
   else{
-  ambiTerm = vec4.create();
-  diffTerm = vec4.create();
-  myMatl = myHit.hitGeom.matl;
-  //console.log(myMatl);
+      ambiTerm = vec4.create();
+      diffTerm = vec4.create();
+      myMatl = myHit.hitGeom.matl;
+      //console.log(myMatl);
 
-  vec4.add(colr,colr,myMatl.K_emit);
+      vec4.add(colr,colr,myMatl.K_emit);
 
-  vec4.multiply(ambiTerm, this.light.Ia, myMatl.K_ambi);
-  //console.log(ambiTerm);
-  vec4.add(colr,colr,ambiTerm);
-  //console.log(colr);
+      vec4.multiply(ambiTerm, this.light.Ia, myMatl.K_ambi);
+      //console.log(ambiTerm);
+      vec4.add(colr,colr,ambiTerm);
+      //console.log(colr);
 
-  Nv = myHit.surfNorm;
-  Lv = vec4.create();
-  vec4.subtract(Lv,this.light.lightPt,myHit.hitPt);
-  vec4.normalize(Lv,Lv);
-  LN = vec4.dot(Nv,Lv);
-  console.log(LN,myHit.hitPt);
-  vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
-  vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
+      Nv = myHit.surfNorm;
+      Lv = vec4.create();
+      vec4.subtract(Lv,this.light.lightPt,myHit.hitPt);
+      vec4.normalize(Lv,Lv);
+      LN = vec4.dot(Nv,Lv);
+      //console.log(LN,myHit.hitPt);
+      vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
+      vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
   }
   /*
 

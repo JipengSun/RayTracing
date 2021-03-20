@@ -46,6 +46,7 @@ function CGeom(shapeSelect) {
 
 	if(shapeSelect == undefined) shapeSelect = RT_GNDPLANE;	// default shape.
 	this.shapeType = shapeSelect;
+  this.matl = new CMatl(MATL_BLU_PLASTIC);
 	
 	// Get clever:  create 'traceMe()' function that calls the tracing function
 	// needed by the shape held in this CGeom object.
@@ -109,7 +110,6 @@ function CGeom(shapeSelect) {
                                     // normals (where they're easy to find)
                                     // to WORLD-space coords (where we need
                                     // them for lighting calcs.)
-  this.matl = new CMatl(MATL_RED_PLASTIC);
 	
 }
 
@@ -286,7 +286,9 @@ CGeom.prototype.traceGrid = function(inRay, myHit) {
   vec4.normalize(myHit.surfNorm, myHit.surfNorm);
 */
 
-  // FIND COLOR at model-space hit-point---------------------------------                        
+
+  // FIND COLOR at model-space hit-point--------------------------------- 
+  this.matl = new CMatl(MATL_BLU_PLASTIC);                      
   var loc = myHit.modelHitPt[0] / this.xgap; // how many 'xgaps' from the origin?
   if(myHit.modelHitPt[0] < 0) loc = -loc;    // keep >0 to form double-width line at yaxis.
 //console.log("loc",loc, "loc%1", loc%1, "lineWidth", this.lineWidth);
@@ -301,6 +303,8 @@ CGeom.prototype.traceGrid = function(inRay, myHit) {
     return;
   }
   myHit.hitNum = 0; // No.
+  this.matl = new CMatl(MATL_BLACK_PLASTIC);
+  //console.log(myHit.matl)
   return;
 }
 
