@@ -119,7 +119,7 @@ CMatl.prototype.setMatl = function(nuMatl) {
 // these numbers and material names at the top of this file).
 // This function DOES NOT CHANGE values of any of its uLoc_XX member variables.
 
-	console.log('Called Material.setMatl( ', nuMatl,');'); 
+	//console.log('Called Material.setMatl( ', nuMatl,');'); 
 	this.K_emit = vec4.create();			// DISCARD any current material reflectance values.
 	this.K_ambi = vec4.create();
 	this.K_diff = vec4.create();
@@ -315,6 +315,6 @@ CMatl.prototype.setMatl = function(nuMatl) {
 			this.K_name = "DEFAULT_RED";
 			break;
 	}
-	console.log('set to:', this.K_name, '\n');
+	//console.log('set to:', this.K_name, '\n');
 	return this;
 }

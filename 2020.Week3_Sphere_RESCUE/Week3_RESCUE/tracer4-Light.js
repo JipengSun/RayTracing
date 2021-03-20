@@ -24,10 +24,10 @@ CLight.prototype.setPosition = function(lightX,lightY,lightZ){
 CLight.prototype.setColor = function(R,G,B){
     vec4.set(this.color,R,G,B,1.0);
 }
-CLight.prototype.setIllum = function(I){
-    vec4.scale(this.Ia,this.color,I);
-    vec4.scale(this.Id,this.color,I);
-    vec4.scale(this.Is,this.color,I);
+CLight.prototype.setIllum = function(Ia,Id,Is){
+    vec4.scale(this.Ia,this.color,Ia);
+    vec4.scale(this.Id,this.color,Id);
+    vec4.scale(this.Is,this.color,Is);
     
     /*
     vec4.set(this.Ia, Iar,Iag,Iab,1.0);

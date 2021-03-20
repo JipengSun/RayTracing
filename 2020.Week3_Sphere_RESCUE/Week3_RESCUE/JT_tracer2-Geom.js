@@ -2,6 +2,7 @@
 // (JT: why the numbers? counts columns, helps me keep 80-char-wide listings,
 //  lets me see EXACTLY what the editor's 'line-wrap' feature will do.)
 
+
 //===  JT_tracer2-Geom.js  ===================================================
 // The object prototypes here and in related files (and their comments):
 //      JT_tracer0-Scene.js
@@ -538,14 +539,15 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
   // Compute the x,y,z,w point where inRay hit the grid-plane in WORLD coords:
   vec4.scaleAndAdd(myHit.hitPt, inRay.orig, inRay.dir, myHit.t0);
   // set 'viewN' member to the reversed, normalized inRay.dir vector:
-  vec4.negate(myHit.viewN, inRay.dir); 
+  vec4.negate(myHit.viewN, inRay.dir);  
+  //vec4.copy(myHit.viewN,inRay.dir);
   // ( CAREFUL! vec4.negate() changes sign of ALL components: x,y,z,w !!
   // inRay.dir MUST be a vector, not a point, to ensure w sign has no effect)
   vec4.normalize(myHit.viewN, myHit.viewN); // ensure a unit-length vector.
   // Now find surface normal: 
   // in model space we know it's always +z,
   // but we need to TRANSFORM the normal to world-space, & re-normalize it.
-  vec4.transformMat4(myHit.surfNorm, vec4.fromValues(0,0,1,0), this.normal2world);
+  vec4.transformMat4(myHit.surfNorm, myHit.hitPt, this.normal2world);
   vec4.normalize(myHit.surfNorm, myHit.surfNorm);
   // TEMPORARY: sphere color-setting
   myHit.hitNum = 1;   // in CScene.makeRayTracedImage, use 'this.gapColor'

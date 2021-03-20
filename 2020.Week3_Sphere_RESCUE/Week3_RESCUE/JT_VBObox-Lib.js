@@ -1,6 +1,7 @@
 //3456789_123456789_123456789_123456789_123456789_123456789_123456789_123456789_
 // (JT: why the numbers? counts columns, helps me keep 80-char-wide listings)
 
+
 // Tabs set to 2
 
 /*=====================
@@ -141,9 +142,10 @@ function VBObox0() {  // (JUST ONE instance: as 'preView' var
 
 //------------Add more shapes:
   this.bgnGrid = this.vboVerts;     // remember starting vertex for 'grid'
-  this.appendWireGroundGrid();      // (see fcn below)
+  this.appendWireGroundGrid();      // (see fcn below)  
   this.bgnDisk = this.vboVerts;     // and the starting vertex for 'disk'
   this.appendDisk(2);               // (see fcn below)
+  //this.appendWireSphere();  
 // /*
  this.bgnSphere = this.vboVerts;    // remember starting vertex for 'sphere'
  this.appendWireSphere();           // create (default-resolution) sphere
@@ -919,6 +921,21 @@ VBObox0.prototype.draw = function() {
   // 3)--------------------copy transforms for Sphere 1 in CScene.initScene(0)
   mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)
   mat4.translate(this.mvpMat, this.mvpMat, vec3.fromValues(1.2, -1.0, 1.0));
+  // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
+  gl.uniformMatrix4fv(this.u_mvpMatLoc,	// GPU location of the uniform
+  										false, 				// use matrix transpose instead?
+  										this.mvpMat);	// send data from Javascript.
+  mat4.copy(this.mvpMat, tmp);      // restore world-space mvpMat values.
+    gl.drawArrays(gl.LINE_STRIP, 	      // select the drawing primitive to draw,
+                  // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
+                  //          gl.TRIANGLES, gl.TRIANGLE_STRIP, ...
+  								this.bgnSphere, 	// location of 1st vertex to draw;
+                  this.vboVerts - this.bgnSphere); // How many vertices to draw
+  
+  mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)
+  
+  mat4.translate(this.mvpMat, this.mvpMat, vec3.fromValues(g_myScene.light.lightPt[0], g_myScene.light.lightPt[1], g_myScene.light.lightPt[2]));
+  mat4.scale(this.mvpMat,this.mvpMat,vec3.fromValues(0.1,0.1,0.1));
   // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
   gl.uniformMatrix4fv(this.u_mvpMatLoc,	// GPU location of the uniform
   										false, 				// use matrix transpose instead?

@@ -2,6 +2,7 @@
 // (JT: why the numbers? counts columns, helps me keep 80-char-wide listings,
 //  lets me see EXACTLY what the editor's 'line-wrap' feature will do.)
 
+
 //const { vec4 } = require("../../2020.Week1_LineGrid_POSTED/lib/glmatrix");
 
 //===  JT_tracer0-Scene.js  ===================================================
@@ -139,7 +140,7 @@ function CHit() {
     // object as we move it around in world-space (by changing worldRay2Model
     // matrix), and the object's surface patterns won't change if we 'squeeze' 
     // or 'stretch' it by non-uniform scaling.
-    this.colr = vec4.clone(g_myScene.skyColor);   // set default as 'sky'
+    //this.colr = vec4.clone(g_myScene.skyColor);   // set default as 'sky'
                                 // The final color we computed for this point,
                                 // (note-- not used for shadow rays).
                                 // (uses RGBA. A==opacity, default A=1=opaque.
@@ -255,7 +256,7 @@ function CScene() {
 //  --lamp[0] is a point-light source at location (5,5,5).
 
 
-  this.RAY_EPSILON = 1.0E-15;       // ray-tracer precision limits; treat 
+  this.RAY_EPSILON = 1.0E-5;       // ray-tracer precision limits; treat 
                                     // any value smaller than this as zero.
                                     // (why?  JS uses 52-bit mantissa;
                                     // 2^-52 = 2.22E-16, so 10^-15 gives a
@@ -264,9 +265,11 @@ function CScene() {
   this.imgBuf = g_myPic;            // DEFAULT output image buffer
                                     // (change it with setImgBuf() if needed)
   this.eyeRay = new CRay();	        // the ray from the camera for each pixel
+  this.shadowRay = new CRay();
   this.rayCam = new CCamera();	    // the 3D camera that sets eyeRay values:
                                     // this is the DEFAULT camera (256,256).
                                     // (change it with setImgBuf() if needed)
+  this.hit2 = new CHit();
   this.light = new CLight();
   this.item = [];                   // this JavaScript array holds all the
                                     // CGeom objects of the  current scene.
@@ -362,9 +365,9 @@ CScene.prototype.initScene = function(num) {
       // additional SCENE 0 SETUP   
       //
       //
-      this.light.setPosition(0,10,5.0);
+      this.light.setPosition(0,-5,5);
       this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(3);
+      this.light.setIllum(1,1,1);
 
 
       break;
@@ -446,8 +449,10 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
           
           // Trace a new eyeRay thru all CGeom items: ------------------------------
           // & keep nearest hit point in myHit.
+          //myHit.init();
           myHit = this.traceRay(myHit,this.eyeRay);
           // Find eyeRay color from myHit-----------------------------------------
+          //console.log(myHit.viewN);
           colr = this.findShade(myHit,colr)
         }
       }
@@ -465,54 +470,78 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
   }
   this.imgBuf.float2int();		// create integer image from floating-point buffer.
 }
-CScene.prototype.traceRay = function(myHit,rayNow){
+CScene.prototype.traceRay = function(myHit1,rayNow){
   // Test all CGeom objects in CScene for ray-intersection. 
-  // Returns CHit object (later for HitList) that holds what and where we hit it.
-  myHit.init();     // start by clearing our 'nearest hit-point', and
+  // Returns CHit object (later for HitList) that holds what and where we hit it.     
+  myHit1.init();// start by clearing our 'nearest hit-point', and
   for(k=0; k< this.item.length; k++) {  // for every CGeom in item[] array,
-      this.item[k].traceMe(rayNow, myHit);  // trace eyeRay thru it,
+      this.item[k].traceMe(rayNow, myHit1);  // trace eyeRay thru it,
   }
-  return myHit;    
+  return myHit1;    
 }
 
-CScene.prototype.findShade = function(myHit,colr){
+CScene.prototype.findShade = function(myHit1,colr){
   // to assess screen color at the end of the ray
   // it completes the CHit object, gets the final color for the eye ray.
   // and recursion may start here
-  if(myHit.hitNum== -1){
+  if(myHit1.hitNum== -1){
     vec4.add(colr,colr,this.skyColor);
     //console.log(colr);
   }
   else{
+      viewV = vec4.create();
+      vec4.copy(viewV,myHit1.viewN);
+      //console.log(myHit1.viewN)
       ambiTerm = vec4.create();
       diffTerm = vec4.create();
       specTerm = vec4.create();
-      myMatl = myHit.hitGeom.matl;
-      //console.log(myMatl);
+      myMatl = myHit1.hitGeom.matl;
+      Nv = myHit1.surfNorm;
+      Lv = vec4.create();
+      vec4.subtract(Lv,this.light.lightPt,myHit1.hitPt);
+      vec4.normalize(Lv,Lv);
+      
 
+      //Calculate Emission
       vec4.add(colr,colr,myMatl.K_emit);
 
+      //Calculate Ambient
       vec4.multiply(ambiTerm, this.light.Ia, myMatl.K_ambi);
-      //console.log(ambiTerm);
       vec4.add(colr,colr,ambiTerm);
-      //console.log(colr);
 
-      Nv = myHit.surfNorm;
-      Lv = vec4.create();
-      vec4.subtract(Lv,this.light.lightPt,myHit.hitPt);
-      vec4.normalize(Lv,Lv);
-      LN = vec4.dot(Nv,Lv);
-      //console.log(LN,myHit.hitPt);
-      vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
-      vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
+      
+      vec4.copy(this.shadowRay.orig,myHit1.hitPt);
+      vec4.scaleAndAdd(this.shadowRay.orig, this.shadowRay.orig, viewV, this.RAY_EPSILON);
+      vec4.copy(this.shadowRay.dir,Lv);
+      //console.log(myHit1.viewN)
+      this.hit2 = this.traceRay(this.hit2,this.shadowRay);
+      //console.log(myHit1.viewN)
+      
 
-      Cv2 = vec4.create();
-      vec4.scale(Cv2,Nv,2*LN);
-      Rv = vec4.create();
-      vec4.subtract(Rv,Cv2,Lv);
-      vec4.multiply(specTerm, this.light.Is, myMatl.K_spec);
-      RV = vec4.dot(myHit.viewN,Rv);
-      vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,RV),myMatl.K_shiny));
+      if (this.hit2.hitNum == -1){
+
+        // Calculate Diffusion
+        LN = vec4.dot(Nv,Lv);
+          if(myHit1.hitGeom.shapeType == RT_SPHERE){
+          //console.log(LN,Nv)
+          }
+        Cv2 = vec4.create();
+        vec4.scale(Cv2,Nv,2*LN);
+        Rv = vec4.create();
+        vec4.subtract(Rv,Cv2,Lv);
+        vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
+        vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
+
+        // Calculate Specular
+        vec4.multiply(specTerm, this.light.Is, myMatl.K_spec);
+        RV = vec4.dot(viewV,Rv);
+        vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,RV),myMatl.K_shiny));
+        //console.log(myHit1.viewN);
+        if(myHit1.hitGeom.shapeType == RT_SPHERE){
+          console.log(viewV,colr,RV)
+          console.log(myHit1.viewN)
+          }
+      }
 
 
   }
