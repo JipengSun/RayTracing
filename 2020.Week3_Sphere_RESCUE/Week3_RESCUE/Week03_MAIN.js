@@ -65,7 +65,7 @@ var g_myScene = new CScene(); // Create our ray-tracing object;
                         // used to write a complete ray-traced image to the
                         // CImgBuf object 'g_myPic' given as argument.
 
-var g_SceneNum = 0;			// scene-selector number; 0,1,2,... G_SCENE_MAX-1
+var g_SceneNum = 2;			// scene-selector number; 0,1,2,... G_SCENE_MAX-1
 var G_SCENE_MAX = 3;		// Number of scenes defined.
 
 var g_AAcode = 1;			// Antialiasing setting: 1 == NO antialiasing at all. 
@@ -74,7 +74,7 @@ var g_AAcode = 1;			// Antialiasing setting: 1 == NO antialiasing at all.
 var G_AA_MAX = 4;				// highest super-sampling number allowed. 
 var g_isJitter = 0;     // ==1 for jitter, ==0 for no jitter.
 
-var G_DEPTH_MAX = 2;
+var G_DEPTH_MAX = 1;
 
 //--END---GLOBAL VARIABLES------------------------------------------------------
 
@@ -108,7 +108,7 @@ function main() {
 
   gui.init();                   // Register all Mouse & Keyboard Event-handlers
                                 // (see JT_GUIbox-Lib.js )
-  g_myScene.initScene(1);       // initialize our ray-tracer (to default scene)
+  g_myScene.initScene(g_SceneNum);       // initialize our ray-tracer (to default scene)
   // Initialize each of our 'vboBox' objects: 
   preView.init(gl);		// VBO + shaders + uniforms + attribs for WebGL preview
   rayView.init(gl);		//  "		"		" to display ray-traced on-screen result.

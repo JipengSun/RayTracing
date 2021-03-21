@@ -170,6 +170,17 @@ CHit.prototype.init  = function() {
                                 //(example; transparency rays begin INSIDE).                                
   vec4.copy(this.modelHitPt,this.hitPt);// the 'hit point' in model coordinates.
 }
+
+CHit.prototype.print = function(){
+  console.log('hitGeom',this.hitGeom.shapeType)
+  console.log('hitPt',vec4.str(this.hitPt));
+  console.log('viewN',vec4.str(this.viewN));
+  console.log('surfNorm',vec4.str(this.surfNorm));
+  console.log('lightV',vec4.str(this.lightV));
+  console.log('reflectV',vec4.str(this.reflectV));
+
+
+}
  
 
 function CHitList() {
@@ -370,10 +381,12 @@ CScene.prototype.initScene = function(num) {
       
      
       //-----Box 1-----
+      /*
       this.item.push(new CGeom(RT_BOX));
       iNow = this.item.length-1;
       this.item[iNow].setIdent();
       this.item[iNow].rayTranslate(3,-3,1);
+      */
 
       this.light.setPosition(5,-5,5);
       this.light.setColor(1.0,1.0,1.0);
@@ -382,21 +395,77 @@ CScene.prototype.initScene = function(num) {
 
       break;
     case 1:
-    //
-    //
-    // another: SCENE 1 SETUP   
-      console.log("JT_tracer0-Scene file: CScene.initScene(",num,") NOT YET IMPLEMENTED.");
-      this.initScene(0); // use default scene
-    //
-    //
+       //---Ground Plane-----
+      // draw this in world-space; no transforms!
+      this.item.push(new CGeom(RT_GNDPLANE));   // Append gnd-plane to item[] array
+      iNow = this.item.length -1;               // get its array index.
+                                                // use default colors.
+                                                // no transforms needed.
+
+      this.item.push(new CGeom(RT_BOX));
+      iNow = this.item.length-1;
+      this.item[iNow].setIdent();
+      this.item[iNow].rayTranslate(0,-3,1);
+      /*
+
+      this.item.push(new CGeom(RT_BOX));
+      iNow = this.item.length-1;
+      this.item[iNow].setIdent();
+      this.item[iNow].rayTranslate(3,0,1);
+
+      this.item.push(new CGeom(RT_BOX));
+      iNow = this.item.length-1;
+      this.item[iNow].setIdent();
+      this.item[iNow].rayTranslate(-3,0,1);
+      */
+
+      this.light.setPosition(5,-5,5);
+      this.light.setColor(1.0,1.0,1.0);
+      this.light.setIllum(1,1,1);
+      
       break;
     case 2:
+      // another: SCENE 2 SETUP  
+      this.item.push(new CGeom(RT_GNDPLANE));   // Append gnd-plane to item[] array
+      iNow = this.item.length -1;               // get its array index.
+                                                // use default colors.
+                                                // no transforms needed.
+      //-----Sphere 1-----
+      this.item.push(new CGeom(RT_SPHERE));       // Append sphere to item[] &
+      iNow = this.item.length -1;                 // get its array index.
+      // Initially leave sphere at the origin. Once you see it, then
+      // move it to a more-sensible location:
+  	  this.item[iNow].setIdent();                   // start in world coord axes
+      this.item[iNow].rayTranslate(0,0, 1.0);  // move rightwards (+x),
+      // and toward camera (-y) enough to stay clear of disks, and up by 1 to
+      // make this radius==1 sphere rest on gnd-plane.
+
+      //-----Sphere 2-----
+      this.item.push(new CGeom(RT_SPHERE));       // Append sphere to item[] &
+      iNow = this.item.length -1;                 // get its array index.
+      // Initially leave sphere at the origin. Once you see it, then
+      // move it to a more-sensible location:
+  	  this.item[iNow].setIdent();                   // start in world coord axes
+      this.item[iNow].rayTranslate(2,-2.0, 1.0);  // move rightwards (+x),
+      // and toward camera (-y) enough to stay clear of disks, and up by 1 to
+      // make this radius==1 sphere rest on gnd-plane.
+
+      //-----Sphere 3-----
+      this.item.push(new CGeom(RT_SPHERE));       // Append sphere to item[] &
+      iNow = this.item.length -1;                 // get its array index.
+      // Initially leave sphere at the origin. Once you see it, then
+      // move it to a more-sensible location:
+  	  this.item[iNow].setIdent();                   // start in world coord axes
+      this.item[iNow].rayTranslate(-2,-2, 1.0);  // move rightwards (+x),
+      // and toward camera (-y) enough to stay clear of disks, and up by 1 to
+      // make this radius==1 sphere rest on gnd-plane.
+
+      this.light.setPosition(5,-5,5);
+      this.light.setColor(1.0,1.0,1.0);
+      this.light.setIllum(1,1,1);
     //
     //
-    // another: SCENE 2 SETUP   
-      console.log("JT_tracer0-Scene file: CScene.initScene(",num,") NOT YET IMPLEMENTED.");    //
-      this.initScene(0); // use default scene
-    //
+     
       break;
     default:    // nonsensical 'sceneNum' value?
       console.log("JT_tracer0-Scene file: CScene.initScene(",num,") NOT YET IMPLEMENTED.");
@@ -445,17 +514,7 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
 					else{
 						this.rayCam.setEyeRay(this.eyeRay,i+(m+0.5)*subgap,j+(n+0.5)*subgap);
 					}
-          if(i==this.imgBuf.xSiz/2 && j==this.imgBuf.ySiz/4) { 
-            this.pixFlag = 1;                     // pixFlag==1 for JUST ONE pixel
-            console.log("CScene.makeRayTracedImage() is at pixel [",i,", ",j,"].",
-                        "by the cunning use of flags. (Eddie Izzard)");
-            // Eddie Izzard "Dress To Kill"(1998)  
-            //    short: https://youtu.be/uEx5G-GOS1k 
-            //     long: https://youtu.be/hxQYE3E8dEY 
-          }
-          else {
-            this.pixFlag = 0;
-          }//-END DIAGNOSTIC--------------------------------
+          
           
           // Trace a new eyeRay thru all CGeom items: ------------------------------
           // & keep nearest hit point in myHit.
@@ -465,6 +524,21 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
           //console.log(myHit.viewN);
           colr = this.findShade(myHit,colr);
           colr = this.getReflection(myHit,colr,0);
+
+          if(i==this.imgBuf.xSiz/2 && j==this.imgBuf.ySiz/4) { 
+            this.pixFlag = 1;                     // pixFlag==1 for JUST ONE pixel
+            console.log("CScene.makeRayTracedImage() is at pixel [",i,", ",j,"].",
+                        "by the cunning use of flags. (Eddie Izzard)");
+            // Eddie Izzard "Dress To Kill"(1998)  
+            //    short: https://youtu.be/uEx5G-GOS1k 
+            //     long: https://youtu.be/hxQYE3E8dEY 
+            myHit.print();
+            console.log(vec4.str(this.eyeRay.orig));
+            
+          }
+          else {
+            this.pixFlag = 0;
+          }//-END DIAGNOSTIC--------------------------------
           
         }
       }

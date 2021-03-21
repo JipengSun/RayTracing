@@ -249,7 +249,7 @@ CGeom.prototype.traceGrid = function(inRay, myHit) {
 */ 
   vec4.transformMat4(rayT.orig, inRay.orig, this.worldRay2model);
   vec4.transformMat4(rayT.dir,  inRay.dir,  this.worldRay2model);
-
+  //console.log('rayT',rayT.orig,rayT.dir);
   // Now use transformed ray 'rayT' for our ray-tracing.
 //------------------End ray-transform.
 
@@ -580,7 +580,8 @@ CGeom.prototype.traceBox = function(inRay, myHit){
                             // also a change to inRay (!!).
   vec4.transformMat4(rayT.orig, inRay.orig, this.worldRay2model);
   vec4.transformMat4(rayT.dir,  inRay.dir,  this.worldRay2model);
-
+  //console.log('rayT',rayT.orig,rayT.dir);
+  
   for(var i=0; i<3; i++){
     //t0*rayT.dir + rayT.orig = 1
     for (var j=-1; j<2; j+=2){
@@ -590,8 +591,14 @@ CGeom.prototype.traceBox = function(inRay, myHit){
       vec4.set(normal,nA[0],nA[1],nA[2],1);
       t0 = (j - rayT.orig[i])/rayT.dir[i];
       if(t0<0){
+        testpt = vec4.create();
+        vec3.scaleAndAdd(testpt,rayT.orig,rayT.dir,t0);
+        //console.log('rayT',rayT.orig,rayT.dir,t0);
+        //console.log('rayT',vec4.str(testpt));
+        //console.log('inRay',inRay.orig,inRay.dir,t0);
         return;
       }
+      
       i1 = (i+1)%3;
       i2 = (i+2)%3;
       s1 = rayT.orig[i1]+t0*rayT.dir[i1];
@@ -599,7 +606,7 @@ CGeom.prototype.traceBox = function(inRay, myHit){
       //console.log(vec4.str(inRay.dir));
       //console.log(s1,s2);
       if (Math.abs(s1)<=1 && Math.abs(s2) <= 1){
-        if (t0 < myHit.t0){
+        if (t0 <= myHit.t0){
           //console.log(myHit);
           myHit.t0 = t0;
           myHit.hitGeom = this;
