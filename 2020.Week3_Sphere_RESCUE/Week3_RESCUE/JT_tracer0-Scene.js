@@ -3,9 +3,6 @@
 //  lets me see EXACTLY what the editor's 'line-wrap' feature will do.)
 
 
-
-
-
 //===  JT_tracer0-Scene.js  ===================================================
 // The object prototypes here and in related files (and their comments):
 //      JT_tracer1-Camera.js
@@ -437,7 +434,6 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
    // holds the nearest ray/grid intersection (if any)
                           // found by tracing eyeRay thru all CGeom objects
                           // held in our CScene.item[] array.
-  this.depth = 0;
                            
   for(j=0; j< this.imgBuf.ySiz; j++) {        // for the j-th row of pixels.
   	for(i=0; i< this.imgBuf.xSiz; i++) {	    // and the i-th pixel on that row,
@@ -468,6 +464,7 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
           // Find eyeRay color from myHit-----------------------------------------
           //console.log(myHit.viewN);
           colr = this.findShade(myHit,colr);
+          colr = this.getReflection(myHit,colr,0);
           
         }
       }
@@ -496,35 +493,56 @@ CScene.prototype.traceRay = function(rayNow){
   return myHit1;    
 }
 
+CScene.prototype.getReflection = function(currentHit,currentColr,depth){
+  if (G_DEPTH_MAX - depth > 0){
+    depth += 1;
+    if (currentHit.hitNum ==-1){
+      return currentColr;
+    }
+    currentMatl = currentHit.hitGeom.matl;
+    reflectRay = new CRay();
+    reflectRay.orig = currentHit.hitPt;
+    vec4.scaleAndAdd(reflectRay.orig, reflectRay.orig, currentHit.viewN, this.RAY_EPSILON);
+    reflectRay.dir = currentHit.reflectV;
+    nextHit = this.traceRay(reflectRay);
+    nextColr = vec4.create();
+    nextColr = this.findShade(nextHit,nextColr);
+    nextColr = vec4.multiply(nextColr,nextColr,currentMatl.K_spec);
+    nextColr = vec4.scaleAndAdd(nextColr,currentColr,nextColr,currentMatl.K_absorb);
+    
+    nextColr = this.getReflection(nextHit,nextColr,depth);
+    return nextColr;
+  }
+  else{
+    return currentColr;
+  }
+}
+function getRefelctV(hit){
+  LN = vec3.dot(hit.surfNorm,hit.lightV);
+  Cv = vec4.create();
+  vec4.scale(Cv,hit.surfNorm,2*LN);
+  vec4.subtract(hit.reflectV,Cv,hit.lightV);
+  vec3.normalize(hit.reflectV,hit.reflectV);
+}
+
 CScene.prototype.findShade = function(myHit1,colr){
   // to assess screen color at the end of the ray
-  // it completes the CHit object, gets the final color for the eye ray.
+  // it completes the CHit object (lightV, reflectV), gets the final color for the eye ray.
   // and recursion may start here
   if(myHit1.hitNum== -1){
     vec4.add(colr,colr,this.skyColor);
     //console.log(colr);
   }
   else{
-    /*
-    if(myHit1.hitGeom.shapeType == RT_BOX){
-      console.log(LN,Nv,Lv)
-      console.log(this.light.lightPt,myHit1.hitPt)
-      }
-      */
-      viewV = vec4.create();
-      normalV = vec4.create();
-      vec4.copy(viewV,myHit1.viewN);
-      vec4.copy(normalV,myHit1.surfNorm);
-      //console.log(myHit1.viewN)
       ambiTerm = vec4.create();
       diffTerm = vec4.create();
       specTerm = vec4.create();
+
       myMatl = myHit1.hitGeom.matl;
-      Nv = myHit1.surfNorm;
-      Lv = vec4.create();
-      vec4.subtract(Lv,this.light.lightPt,myHit1.hitPt);
-      vec3.normalize(Lv,Lv);
-      //console.log(Lv)
+      // Calculate light vector, reflect vector
+      vec4.subtract(myHit1.lightV,this.light.lightPt,myHit1.hitPt);
+      vec3.normalize(myHit1.lightV, myHit1.lightV);
+      getRefelctV(myHit1);
       
 
       //Calculate Emission
@@ -534,89 +552,37 @@ CScene.prototype.findShade = function(myHit1,colr){
       vec4.multiply(ambiTerm, this.light.Ia, myMatl.K_ambi);
       vec4.add(colr,colr,ambiTerm);
 
-      
+      //Calulate shadowRay
       vec4.copy(this.shadowRay.orig,myHit1.hitPt);
-      vec4.scaleAndAdd(this.shadowRay.orig, this.shadowRay.orig, viewV, this.RAY_EPSILON);
-      vec4.copy(this.shadowRay.dir,Lv);
+      vec4.scaleAndAdd(this.shadowRay.orig, this.shadowRay.orig, myHit1.viewN, this.RAY_EPSILON);
+      vec4.copy(this.shadowRay.dir,myHit.lightV);
       //console.log(myHit1.viewN)
       this.hit2 = this.traceRay(this.shadowRay);
       //console.log(myHit1.viewN)
-      
-
       if (this.hit2.hitNum == -1){
 
         // Calculate Diffusion
-        LN = vec3.dot(normalV,Lv);
-        /*
-          if(myHit1.hitGeom.shapeType == RT_BOX){
-          console.log(LN,Nv,Lv)
-          console.log(this.light.lightPt,myHit1.hitPt)
-          }
-          */
-        Cv2 = vec4.create();
-        vec4.scale(Cv2,normalV,2*LN);
-        Rv = vec4.create();
-        vec4.subtract(Rv,Cv2,Lv);
+        LN = vec3.dot(myHit1.surfNorm,myHit1.lightV);
         vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
         vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
 
         // Calculate Specular
-        
-        
-        RV = vec3.dot(viewV,Rv);
         vec4.multiply(specTerm, this.light.Is, myMatl.K_spec);
+        RV = vec3.dot(myHit1.reflectV, myHit1.viewN);
+        /* Phong Blin
         mV = vec4.create();
         vec4.add(mV,Lv,viewV);
         vec3.normalize(mV,mV);
         MN = vec3.dot(mV,normalV);
+        */
         vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,RV),myMatl.K_shiny));
         //console.log(myHit1.viewN);
         if(myHit1.hitGeom.shapeType == RT_BOX){
-          console.log(RV,viewV,Rv,normalV)
+          //console.log(RV,viewV,Rv,normalV)
           //console.log(vec4.str(myHit1.viewN), vec4.str(myHit1.Lv),LN)
           }
       }
-
-
   }
-  /*
-
-
-  if(myHit.hitNum==0) {  // use myGrid tracing to determine color
-    //vec4.copy(colr, myHit.hitGeom.gapColor);
-    //console.log(colr,myHit.hitGeom.gapColor)
-
-
-    vec4.add(colr,colr,myHit.hitGeom.gapColor);
-  }
-  else if (myHit.hitNum==1) {
-    //vec4.copy(colr, myHit.hitGeom.lineColor);
-    vec4.add(colr,colr,myHit.hitGeom.lineColor);
-  }
-  else { // if (myHit.hitNum== -1)
-    //vec4.copy(colr, this.skyColor);
-    vec4.add(colr,colr,this.skyColor);
-  }
-  */
   return colr
 
-}
-
-CScene.prototype.getReflection = function(currentHit,colr,depth){
-  if (G_DEPTH_MAX - depth > 0){
-    reflectRay = new CRay();
-    reflectRay.orig = currentHit.hitPt;
-    reflectRay.dir = currentHit.reflectV;
-    nextHit = this.traceRay(reflectRay);
-    this.findShade(nextHit,colr);
-    
-  }
-
-}
-function getRefelctV(hit){
-  LN = vec4.dot(hit.surfNorm,hit.lightV);
-  Cv = vec4.create();
-  vec4.scale(Cv,hit.surfNorm,2*LN);
-  vec4.subtract(hit.reflectV,Cv,hit.lightV);
-  vec4.normalize(hit.reflectV,hit.reflectV);
 }

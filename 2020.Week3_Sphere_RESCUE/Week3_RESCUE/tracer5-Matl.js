@@ -94,6 +94,7 @@ function CMatl(opt_Matl) {
 	this.K_shiny = 0.0;
 	this.K_name = "Undefined Material";		// text string with material name.
 	this.K_matlNum = 	MATL_DEFAULT;				// material number.
+	this.K_absorb = 0.8;
 	
 	// GPU location values for GLSL struct-member uniforms (LampT struct) needed
 	// to transfer K values above to the GPU. Get these values using the
