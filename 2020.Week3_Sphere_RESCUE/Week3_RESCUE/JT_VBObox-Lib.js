@@ -985,8 +985,6 @@ switch(g_SceneNum){
                     this.vboVerts - this.bgnCube); // How many vertices to draw
     break;
   case 1:
-    break;
-  case 2:
     var tmp = mat4.create();    
     mat4.copy(tmp, this.mvpMat); 
 
@@ -1069,6 +1067,8 @@ switch(g_SceneNum){
                     this.bgnSphere, 	// location of 1st vertex to draw;
                     this.bgnCube - this.bgnSphere); // How many vertices to draw
     break;
+  case 2:
+      break;
   default:
     break;
 }

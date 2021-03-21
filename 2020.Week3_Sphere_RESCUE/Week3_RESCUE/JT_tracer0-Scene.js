@@ -381,50 +381,21 @@ CScene.prototype.initScene = function(num) {
       
      
       //-----Box 1-----
-      /*
+      
       this.item.push(new CGeom(RT_BOX));
       iNow = this.item.length-1;
       this.item[iNow].setIdent();
       this.item[iNow].rayTranslate(3,-3,1);
-      */
-
-      this.light.setPosition(5,-5,5);
-      this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(1,1,1);
-
-
-      break;
-    case 1:
-       //---Ground Plane-----
-      // draw this in world-space; no transforms!
-      this.item.push(new CGeom(RT_GNDPLANE));   // Append gnd-plane to item[] array
-      iNow = this.item.length -1;               // get its array index.
-                                                // use default colors.
-                                                // no transforms needed.
-
-      this.item.push(new CGeom(RT_BOX));
-      iNow = this.item.length-1;
-      this.item[iNow].setIdent();
-      this.item[iNow].rayTranslate(0,-3,1);
-      /*
-
-      this.item.push(new CGeom(RT_BOX));
-      iNow = this.item.length-1;
-      this.item[iNow].setIdent();
-      this.item[iNow].rayTranslate(3,0,1);
-
-      this.item.push(new CGeom(RT_BOX));
-      iNow = this.item.length-1;
-      this.item[iNow].setIdent();
-      this.item[iNow].rayTranslate(-3,0,1);
-      */
-
-      this.light.setPosition(5,-5,5);
-      this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(1,1,1);
       
+
+      this.light.setPosition(5,-5,5);
+      this.light.setColor(1.0,1.0,1.0);
+      this.light.setIllum(1,1,1);
+
+
       break;
-    case 2:
+    
+    case 1:
       // another: SCENE 2 SETUP  
       this.item.push(new CGeom(RT_GNDPLANE));   // Append gnd-plane to item[] array
       iNow = this.item.length -1;               // get its array index.
@@ -466,6 +437,39 @@ CScene.prototype.initScene = function(num) {
     //
     //
      
+      break;
+    case 2:
+      /*
+       //---Ground Plane-----
+      // draw this in world-space; no transforms!
+      this.item.push(new CGeom(RT_GNDPLANE));   // Append gnd-plane to item[] array
+      iNow = this.item.length -1;               // get its array index.
+                                                // use default colors.
+                                                // no transforms needed.
+
+      this.item.push(new CGeom(RT_BOX));
+      iNow = this.item.length-1;
+      this.item[iNow].setIdent();
+      this.item[iNow].rayTranslate(0,-3,1);
+      */
+      /*
+
+      this.item.push(new CGeom(RT_BOX));
+      iNow = this.item.length-1;
+      this.item[iNow].setIdent();
+      this.item[iNow].rayTranslate(3,0,1);
+
+      this.item.push(new CGeom(RT_BOX));
+      iNow = this.item.length-1;
+      this.item[iNow].setIdent();
+      this.item[iNow].rayTranslate(-3,0,1);
+      */
+     /*
+
+      this.light.setPosition(5,-5,5);
+      this.light.setColor(1.0,1.0,1.0);
+      this.light.setIllum(1,1,1);
+      */
       break;
     default:    // nonsensical 'sceneNum' value?
       console.log("JT_tracer0-Scene file: CScene.initScene(",num,") NOT YET IMPLEMENTED.");

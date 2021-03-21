@@ -65,8 +65,8 @@ var g_myScene = new CScene(); // Create our ray-tracing object;
                         // used to write a complete ray-traced image to the
                         // CImgBuf object 'g_myPic' given as argument.
 
-var g_SceneNum = 2;			// scene-selector number; 0,1,2,... G_SCENE_MAX-1
-var G_SCENE_MAX = 3;		// Number of scenes defined.
+var g_SceneNum = 0;			// scene-selector number; 0,1,2,... G_SCENE_MAX-1
+var G_SCENE_MAX = 1;		// Number of scenes defined.
 
 var g_AAcode = 1;			// Antialiasing setting: 1 == NO antialiasing at all. 
                         // 2,3,4... == supersamples: 2x2, 3x3, 4x4, ...
@@ -460,7 +460,9 @@ function onSceneButton() {
   			'Show Scene Number' + g_SceneNum;
 
   // Change g_myPic contents:
+  rayView.init(gl);
   g_myPic.setTestPattern(g_SceneNum);
+  g_myScene.initScene(g_SceneNum); 
   // transfer g_myPic's new contents to the GPU;
   rayView.switchToMe(); // be sure OUR VBO & shaders are in use, then
   rayView.reload();     // re-transfer VBO contents and texture-map contents
