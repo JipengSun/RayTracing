@@ -285,6 +285,7 @@ function CScene() {
   this.light = new CLight();
   this.item = [];                   // this JavaScript array holds all the
                                     // CGeom objects of the  current scene.
+  this.lightList = [];
 }
 
 CScene.prototype.setImgBuf = function(nuImg) {
