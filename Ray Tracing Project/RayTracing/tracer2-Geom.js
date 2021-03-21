@@ -560,7 +560,7 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
   vec3.normalize(myHit.surfNorm, myHit.surfNorm);
   // TEMPORARY: sphere color-setting
   myHit.hitNum = 1;   // in CScene.makeRayTracedImage, use 'this.gapColor'
-  console.log(this.texType);
+  //console.log(this.texType);
   this.matl.setMatl(MATL_GOLD_SHINY);
 
 

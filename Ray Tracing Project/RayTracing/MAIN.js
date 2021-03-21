@@ -455,15 +455,27 @@ function onSceneButton() {
 	//console.log('ON-SCENE BUTTON!');
 	if(g_SceneNum < 0 || g_SceneNum >= G_SCENE_MAX) g_SceneNum = 0;
 	else g_SceneNum = g_SceneNum +1;
+  g_myScene.lightList = [];
+
+  g_myScene.initScene(g_SceneNum);
 
 	document.getElementById('SceneReport').innerHTML =
   			'Show Scene Number' + g_SceneNum;
+  document.getElementById('Light1Report').innerHTML =
+  			'Light1 is On';
+    
+  document.getElementById('Light2Report').innerHTML =
+    'Light2 is On' ;
+
+  
 
   // Change g_myPic contents:
+  /*
   rayView.init(gl);
   g_myPic.setTestPattern(g_SceneNum);
   g_myScene.initScene(g_SceneNum); 
   // transfer g_myPic's new contents to the GPU;
+  */
   rayView.switchToMe(); // be sure OUR VBO & shaders are in use, then
   rayView.reload();     // re-transfer VBO contents and texture-map contents
   drawAll();
@@ -474,6 +486,39 @@ function onReflectButton(){
   else G_DEPTH_MAX += 1;
   document.getElementById('DepthReport').innerHTML =
   			'Show Reflection Depth' + G_DEPTH_MAX;
+  rayView.switchToMe();
+  rayView.reload();
+  drawAll();
+
+}
+
+function onLight1Button(){
+  if(g_myScene.lightList[0].isOn) {
+    g_myScene.lightList[0].isOn = false;
+    document.getElementById('Light1Report').innerHTML =
+  			'Light1 is Off';
+    }
+  else {
+    g_myScene.lightList[0].isOn = true;
+    document.getElementById('Light1Report').innerHTML =
+  			'Light1 is On' ;
+  }
+  rayView.switchToMe();
+  rayView.reload();
+  drawAll();
+
+}
+function onLight2Button(){
+  if(g_myScene.lightList[1].isOn) {
+    g_myScene.lightList[1].isOn = false;
+    document.getElementById('Light2Report').innerHTML =
+  			'Light2 is Off';
+    }
+  else {
+    g_myScene.lightList[1].isOn = true;
+    document.getElementById('Light2Report').innerHTML =
+  			'Light2 is On' ;
+  }
   rayView.switchToMe();
   rayView.reload();
   drawAll();

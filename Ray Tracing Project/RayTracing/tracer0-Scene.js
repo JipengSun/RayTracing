@@ -120,8 +120,10 @@ function CHit() {
     this.isEntering=true;       // true iff ray origin was OUTSIDE the hitGeom.
                                 //(example; transparency rays begin INSIDE).
     this.lightV = vec4.create();
+    this.lightVList = [];
 
     this.reflectV = vec4.create();
+    this.reflectVList = []
                                 
     this.modelHitPt = vec4.create(); // the 'hit point' in model coordinates.
     // *WHY* have modelHitPt? to evaluate procedural textures & materials.
@@ -282,7 +284,7 @@ function CScene() {
                                     // this is the DEFAULT camera (256,256).
                                     // (change it with setImgBuf() if needed)
   this.hit2 = new CHit();
-  this.light = new CLight();
+  //this.light = new CLight();
   this.item = [];                   // this JavaScript array holds all the
                                     // CGeom objects of the  current scene.
   this.lightList = [];
@@ -389,9 +391,19 @@ CScene.prototype.initScene = function(num) {
       this.item[iNow].rayTranslate(3,-3,1);
       
 
-      this.light.setPosition(5,-5,5);
-      this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(1,1,1);
+      light1 = new CLight();
+      light1.setPosition(5,-5,5);
+      light1.setColor(1.0,1.0,1.0);
+      light1.setIllum(0.6,0.6,0.6);
+      this.lightList.push(light1);
+
+      light2 = new CLight();
+      light2.setPosition(5,5,5);
+      light2.setColor(1.0,1.0,1.0);
+      light2.setIllum(0.6,0.6,0.6);
+      this.lightList.push(light2);
+
+
 
 
       break;
@@ -432,9 +444,17 @@ CScene.prototype.initScene = function(num) {
       // and toward camera (-y) enough to stay clear of disks, and up by 1 to
       // make this radius==1 sphere rest on gnd-plane.
 
-      this.light.setPosition(5,-5,5);
-      this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(1,1,1);
+      light1 = new CLight();
+      light1.setPosition(5,-5,5);
+      light1.setColor(1.0,1.0,1.0);
+      light1.setIllum(1,1,1);
+      this.lightList.push(light1);
+
+      light2 = new CLight();
+      light2.setPosition(5,5,5);
+      light2.setColor(1.0,1.0,1.0);
+      light2.setIllum(1,1,1);
+      this.lightList.push(light2);
     //
     //
      
@@ -582,7 +602,7 @@ CScene.prototype.getReflection = function(currentHit,currentColr,depth){
     reflectRay = new CRay();
     reflectRay.orig = currentHit.hitPt;
     vec4.scaleAndAdd(reflectRay.orig, reflectRay.orig, currentHit.viewN, this.RAY_EPSILON);
-    reflectRay.dir = currentHit.reflectV;
+    reflectRay.dir = currentHit.reflectVList[0];
     nextHit = this.traceRay(reflectRay);
     nextColr = vec4.create();
     nextColr = this.findShade(nextHit,nextColr);
@@ -596,12 +616,16 @@ CScene.prototype.getReflection = function(currentHit,currentColr,depth){
     return currentColr;
   }
 }
-function getRefelctV(hit){
-  LN = vec3.dot(hit.surfNorm,hit.lightV);
-  Cv = vec4.create();
-  vec4.scale(Cv,hit.surfNorm,2*LN);
-  vec4.subtract(hit.reflectV,Cv,hit.lightV);
-  vec3.normalize(hit.reflectV,hit.reflectV);
+function getRefelctVList(hit){
+  for(i = 0; i < hit.lightVList.length; i++){
+    LN = vec3.dot(hit.surfNorm,hit.lightVList[i]);
+    Cv = vec4.create();
+    vec4.scale(Cv,hit.surfNorm,2*LN);
+    rV = vec4.create()
+    vec4.subtract(rV,Cv,hit.lightVList[i]);
+    vec3.normalize(rV,rV);
+    hit.reflectVList.push(rV);
+  }
 }
 
 CScene.prototype.findShade = function(myHit1,colr){
@@ -619,49 +643,58 @@ CScene.prototype.findShade = function(myHit1,colr){
 
       myMatl = myHit1.hitGeom.matl;
       // Calculate light vector, reflect vector
-      vec4.subtract(myHit1.lightV,this.light.lightPt,myHit1.hitPt);
-      vec3.normalize(myHit1.lightV, myHit1.lightV);
-      getRefelctV(myHit1);
+      for (var i=0 ; i< this.lightList.length; i++){
+        lV = vec4.create();
+        vec4.subtract(lV,this.lightList[i].lightPt,myHit1.hitPt);
+        vec3.normalize(lV,lV);
+        myHit1.lightVList.push(lV)
+      }
+
+      getRefelctVList(myHit1);
       
 
       //Calculate Emission
       vec4.add(colr,colr,myMatl.K_emit);
 
       //Calculate Ambient
-      vec4.multiply(ambiTerm, this.light.Ia, myMatl.K_ambi);
-      vec4.add(colr,colr,ambiTerm);
+      for (var i=0; i< this.lightList.length;i++){
+        if (this.lightList[i].isOn){
+          vec4.multiply(ambiTerm, this.lightList[i].Ia, myMatl.K_ambi);
+          vec4.add(colr,colr,ambiTerm);
 
-      //Calulate shadowRay
-      vec4.copy(this.shadowRay.orig,myHit1.hitPt);
-      vec4.scaleAndAdd(this.shadowRay.orig, this.shadowRay.orig, myHit1.viewN, this.RAY_EPSILON);
-      vec4.copy(this.shadowRay.dir,myHit.lightV);
-      //console.log(myHit1.viewN)
-      this.hit2 = this.traceRay(this.shadowRay);
-      //console.log(myHit1.viewN)
-      if (this.hit2.hitNum == -1){
+          vec4.copy(this.shadowRay.orig,myHit1.hitPt);
+          vec4.scaleAndAdd(this.shadowRay.orig, this.shadowRay.orig, myHit1.viewN, this.RAY_EPSILON);
+          vec4.copy(this.shadowRay.dir,myHit.lightVList[i]);
+          //console.log(myHit1.viewN)
+          this.hit2 = this.traceRay(this.shadowRay);
+          if (this.hit2.hitNum == -1){
 
-        // Calculate Diffusion
-        LN = vec3.dot(myHit1.surfNorm,myHit1.lightV);
-        vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
-        vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
-
-        // Calculate Specular
-        vec4.multiply(specTerm, this.light.Is, myMatl.K_spec);
-        RV = vec3.dot(myHit1.reflectV, myHit1.viewN);
-        /* Phong Blin
-        mV = vec4.create();
-        vec4.add(mV,Lv,viewV);
-        vec3.normalize(mV,mV);
-        MN = vec3.dot(mV,normalV);
-        */
-        vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,RV),myMatl.K_shiny));
-        //console.log(myHit1.viewN);
-        if(myHit1.hitGeom.shapeType == RT_BOX){
-          //console.log(RV,viewV,Rv,normalV)
-          //console.log(vec4.str(myHit1.viewN), vec4.str(myHit1.Lv),LN)
+            // Calculate Diffusion
+            LN = vec3.dot(myHit1.surfNorm,myHit1.lightVList[i]);
+            vec4.multiply(diffTerm, this.lightList[i].Id, myMatl.K_diff);
+            vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
+    
+            // Calculate Specular
+            vec4.multiply(specTerm, this.lightList[i].Is, myMatl.K_spec);
+            RV = vec3.dot(myHit1.reflectVList[i], myHit1.viewN);
+            /* Phong Blin
+            mV = vec4.create();
+            vec4.add(mV,Lv,viewV);
+            vec3.normalize(mV,mV);
+            MN = vec3.dot(mV,normalV);
+            */
+            vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,RV),myMatl.K_shiny));
+            //console.log(myHit1.viewN);
+            if(myHit1.hitGeom.shapeType == RT_BOX){
+              //console.log(RV,viewV,Rv,normalV)
+              //console.log(vec4.str(myHit1.viewN), vec4.str(myHit1.Lv),LN)
+              }
           }
+
+        }
+        
+
       }
   }
   return colr
-
 }
