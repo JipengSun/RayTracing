@@ -589,6 +589,9 @@ CGeom.prototype.traceBox = function(inRay, myHit){
       nA[i] = j;
       vec4.set(normal,nA[0],nA[1],nA[2],1);
       t0 = (j - rayT.orig[i])/rayT.dir[i];
+      if(t0<0){
+        return;
+      }
       i1 = (i+1)%3;
       i2 = (i+2)%3;
       s1 = rayT.orig[i1]+t0*rayT.dir[i1];

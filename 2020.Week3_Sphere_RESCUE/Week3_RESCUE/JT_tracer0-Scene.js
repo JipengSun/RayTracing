@@ -375,7 +375,7 @@ CScene.prototype.initScene = function(num) {
 
       this.light.setPosition(5,-5,5);
       this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(2,2,2);
+      this.light.setIllum(0,0,1);
 
 
       break;
