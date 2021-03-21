@@ -467,6 +467,17 @@ function onSceneButton() {
   drawAll();
 }
 
+function onReflectButton(){
+  if(G_DEPTH_MAX < 0 || G_DEPTH_MAX >= 5) G_DEPTH_MAX =0;
+  else G_DEPTH_MAX += 1;
+  document.getElementById('DepthReport').innerHTML =
+  			'Show Reflection Depth' + G_DEPTH_MAX;
+  rayView.switchToMe();
+  rayView.reload();
+  drawAll();
+
+}
+
 function onBrowserResize() {
 //=============================================================================
 // Called when user re-sizes their browser window , because our HTML file

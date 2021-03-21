@@ -441,7 +441,7 @@ CScene.prototype.initScene = function(num) {
       // make this radius==1 sphere rest on gnd-plane.
 
       //-----Sphere 2-----
-      this.item.push(new CGeom(RT_SPHERE));       // Append sphere to item[] &
+      this.item.push(new CGeom(RT_SPHERE,TEX_CHECKERBOARD));       // Append sphere to item[] &
       iNow = this.item.length -1;                 // get its array index.
       // Initially leave sphere at the origin. Once you see it, then
       // move it to a more-sensible location:
@@ -451,7 +451,7 @@ CScene.prototype.initScene = function(num) {
       // make this radius==1 sphere rest on gnd-plane.
 
       //-----Sphere 3-----
-      this.item.push(new CGeom(RT_SPHERE));       // Append sphere to item[] &
+      this.item.push(new CGeom(RT_SPHERE,TEX_CIRCLE));       // Append sphere to item[] &
       iNow = this.item.length -1;                 // get its array index.
       // Initially leave sphere at the origin. Once you see it, then
       // move it to a more-sensible location:

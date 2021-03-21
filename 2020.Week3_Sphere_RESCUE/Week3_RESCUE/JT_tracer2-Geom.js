@@ -25,7 +25,10 @@ const RT_CYLINDER = 4;    // A cylinder with user-settable radius at each end
 const RT_TRIANGLE = 5;    // a triangle with 3 vertices.
 const RT_BLOBBY   = 6;    // Implicit surface:Blinn-style Gaussian 'blobbies'.
 
-function CGeom(shapeSelect) {
+const TEX_CHECKERBOARD = 0;
+const TEX_CIRCLE = 1;
+const TEX_NONE = 2;
+function CGeom(shapeSelect,textureSelect) {
 //=============================================================================
 // Generic object for a geometric shape, including its worldRay2model matrix
 // used to transform any ray we wish to trace against it.
@@ -47,7 +50,9 @@ function CGeom(shapeSelect) {
 // ellipsoids for the unit sphere and rectangles (or prisms) from the unit box.
 
 	if(shapeSelect == undefined) shapeSelect = RT_GNDPLANE;	// default shape.
+  if(textureSelect == undefined) textureSelect = TEX_NONE;
 	this.shapeType = shapeSelect;
+  this.texType = textureSelect;
   this.matl = new CMatl(MATL_BLU_PLASTIC);
 	
 	// Get clever:  create 'traceMe()' function that calls the tracing function
@@ -555,10 +560,26 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
   vec3.normalize(myHit.surfNorm, myHit.surfNorm);
   // TEMPORARY: sphere color-setting
   myHit.hitNum = 1;   // in CScene.makeRayTracedImage, use 'this.gapColor'
+  console.log(this.texType);
   this.matl.setMatl(MATL_GOLD_SHINY);
 
 
-  this.get3DCheckerBoard(myHit.modelHitPt[0],myHit.modelHitPt[1],myHit.modelHitPt[2],0.1,0.1,0.1)
+  switch(this.texType){
+    case 0:
+      this.get3DCheckerBoard(myHit.modelHitPt[0],myHit.modelHitPt[1],myHit.modelHitPt[2],0.1,0.1,0.1)
+      break;
+    case 1:
+      this.getCircle(myHit.modelHitPt[2],0.1);
+      break;
+    case 2:
+      this.matl.setMatl(MATL_GOLD_SHINY);
+      break
+  }
+
+
+
+
+  //this.get3DCheckerBoard(myHit.modelHitPt[0],myHit.modelHitPt[1],myHit.modelHitPt[2],0.1,0.1,0.1)
  
    // DIAGNOSTIC:---------------------------------------------------------------
   if(g_myScene.pixFlag ==1) {   // did we reach the one 'flagged' pixel
@@ -637,3 +658,12 @@ CGeom.prototype.get3DCheckerBoard = function(x,y,z,xgap,ygap,zgap){
   if (y > 0.5) this.matl = this.matl1;
   else this.matl = this.matl2;
 }
+
+CGeom.prototype.getCircle = function(z,zgap){
+  zm = Math.floor(z/zgap);
+  var a = zm%2;
+  if (a<0) a = -a;
+  if (a>0.5) this.matl = this.matl1;
+  else this.matl = this.matl2;
+}
+
