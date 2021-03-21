@@ -3,7 +3,6 @@
 //  lets me see EXACTLY what the editor's 'line-wrap' feature will do.)
 
 
-//const { vec4 } = require("../../2020.Week1_LineGrid_POSTED/lib/glmatrix");
 
 //===  JT_tracer0-Scene.js  ===================================================
 // The object prototypes here and in related files (and their comments):
@@ -320,6 +319,7 @@ CScene.prototype.initScene = function(num) {
       iNow = this.item.length -1;               // get its array index.
                                                 // use default colors.
                                                 // no transforms needed.
+      
       //-----Disk 1------           
       this.item.push(new CGeom(RT_DISK));         // Append 2D disk to item[] &
       iNow = this.item.length -1;                 // get its array index.
@@ -365,9 +365,17 @@ CScene.prototype.initScene = function(num) {
       // additional SCENE 0 SETUP   
       //
       //
-      this.light.setPosition(0,-5,5);
+      
+     
+      //-----Box 1-----
+      this.item.push(new CGeom(RT_BOX));
+      iNow = this.item.length-1;
+      this.item[iNow].setIdent();
+      this.item[iNow].rayTranslate(4,-4,1);
+
+      this.light.setPosition(5,-5,5);
       this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(1,1,1);
+      this.light.setIllum(2,2,2);
 
 
       break;
@@ -421,7 +429,7 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
                   // selected below. Ray-tracing functions (e.g. traceGrid(), 
                   // traceDisk()) can use g_)myScene.pixFlag to let you print 
                   // values for JUST ONE ray.
-  var myHit = new CHit(); // holds the nearest ray/grid intersection (if any)
+   // holds the nearest ray/grid intersection (if any)
                           // found by tracing eyeRay thru all CGeom objects
                           // held in our CScene.item[] array.
                            
@@ -450,7 +458,7 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
           // Trace a new eyeRay thru all CGeom items: ------------------------------
           // & keep nearest hit point in myHit.
           //myHit.init();
-          myHit = this.traceRay(myHit,this.eyeRay);
+          myHit = this.traceRay(this.eyeRay);
           // Find eyeRay color from myHit-----------------------------------------
           //console.log(myHit.viewN);
           colr = this.findShade(myHit,colr)
@@ -470,13 +478,14 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
   }
   this.imgBuf.float2int();		// create integer image from floating-point buffer.
 }
-CScene.prototype.traceRay = function(myHit1,rayNow){
+CScene.prototype.traceRay = function(rayNow){
   // Test all CGeom objects in CScene for ray-intersection. 
   // Returns CHit object (later for HitList) that holds what and where we hit it.     
-  myHit1.init();// start by clearing our 'nearest hit-point', and
+  var myHit1 = new CHit();// start by clearing our 'nearest hit-point', and
   for(k=0; k< this.item.length; k++) {  // for every CGeom in item[] array,
       this.item[k].traceMe(rayNow, myHit1);  // trace eyeRay thru it,
   }
+  //console.log(vec4.str(rayNow.dir));
   return myHit1;    
 }
 
@@ -489,8 +498,16 @@ CScene.prototype.findShade = function(myHit1,colr){
     //console.log(colr);
   }
   else{
+    /*
+    if(myHit1.hitGeom.shapeType == RT_BOX){
+      console.log(LN,Nv,Lv)
+      console.log(this.light.lightPt,myHit1.hitPt)
+      }
+      */
       viewV = vec4.create();
+      normalV = vec4.create();
       vec4.copy(viewV,myHit1.viewN);
+      vec4.copy(normalV,myHit1.surfNorm);
       //console.log(myHit1.viewN)
       ambiTerm = vec4.create();
       diffTerm = vec4.create();
@@ -499,7 +516,8 @@ CScene.prototype.findShade = function(myHit1,colr){
       Nv = myHit1.surfNorm;
       Lv = vec4.create();
       vec4.subtract(Lv,this.light.lightPt,myHit1.hitPt);
-      vec4.normalize(Lv,Lv);
+      vec3.normalize(Lv,Lv);
+      //console.log(Lv)
       
 
       //Calculate Emission
@@ -514,32 +532,41 @@ CScene.prototype.findShade = function(myHit1,colr){
       vec4.scaleAndAdd(this.shadowRay.orig, this.shadowRay.orig, viewV, this.RAY_EPSILON);
       vec4.copy(this.shadowRay.dir,Lv);
       //console.log(myHit1.viewN)
-      this.hit2 = this.traceRay(this.hit2,this.shadowRay);
+      this.hit2 = this.traceRay(this.shadowRay);
       //console.log(myHit1.viewN)
       
 
       if (this.hit2.hitNum == -1){
 
         // Calculate Diffusion
-        LN = vec4.dot(Nv,Lv);
-          if(myHit1.hitGeom.shapeType == RT_SPHERE){
-          //console.log(LN,Nv)
+        LN = vec3.dot(normalV,Lv);
+        /*
+          if(myHit1.hitGeom.shapeType == RT_BOX){
+          console.log(LN,Nv,Lv)
+          console.log(this.light.lightPt,myHit1.hitPt)
           }
+          */
         Cv2 = vec4.create();
-        vec4.scale(Cv2,Nv,2*LN);
+        vec4.scale(Cv2,normalV,2*LN);
         Rv = vec4.create();
         vec4.subtract(Rv,Cv2,Lv);
         vec4.multiply(diffTerm, this.light.Id, myMatl.K_diff);
         vec4.scaleAndAdd(colr,colr,diffTerm,Math.max(0,LN));
 
         // Calculate Specular
+        
+        
+        RV = vec3.dot(viewV,Rv);
         vec4.multiply(specTerm, this.light.Is, myMatl.K_spec);
-        RV = vec4.dot(viewV,Rv);
-        vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,RV),myMatl.K_shiny));
+        mV = vec4.create();
+        vec4.add(mV,Lv,viewV);
+        vec3.normalize(mV,mV);
+        MN = vec3.dot(mV,normalV);
+        vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,MN),myMatl.K_shiny));
         //console.log(myHit1.viewN);
-        if(myHit1.hitGeom.shapeType == RT_SPHERE){
-          console.log(viewV,colr,RV)
-          console.log(myHit1.viewN)
+        if(myHit1.hitGeom.shapeType == RT_BOX){
+          console.log(RV,viewV,Rv)
+          //console.log(vec4.str(myHit1.viewN), vec4.str(myHit1.Lv),LN)
           }
       }
 

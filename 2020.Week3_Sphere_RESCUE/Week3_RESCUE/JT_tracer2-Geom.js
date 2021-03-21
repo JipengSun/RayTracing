@@ -3,6 +3,7 @@
 //  lets me see EXACTLY what the editor's 'line-wrap' feature will do.)
 
 
+
 //===  JT_tracer2-Geom.js  ===================================================
 // The object prototypes here and in related files (and their comments):
 //      JT_tracer0-Scene.js
@@ -277,14 +278,14 @@ CGeom.prototype.traceGrid = function(inRay, myHit) {
   vec4.negate(myHit.viewN, inRay.dir);     // reversed, normalized inRay.dir:
   // ( CAREFUL! vec4.negate() changes sign of ALL components: x,y,z,w !!
   // inRay.dir MUST be a vector, not a point, to ensure w sign has no effect)
-  vec4.normalize(myHit.viewN, myHit.viewN); // make view vector unit-length.
+  vec3.normalize(myHit.viewN, myHit.viewN); // make view vector unit-length.
   vec4.set(myHit.surfNorm, 0,0,1,0);    // surface normal FIXED at world +Z.
 /* or if you wish:
   // COMPUTE the surface normal:  (needed if you transformed the gnd-plane grid)
   // in model space we know it's always +z,
   // but we need to TRANSFORM the normal to world-space, & re-normalize it.
   vec4.transformMat4(myHit.surfNorm, vec4.fromValues(0,0,1,0), this.normal2world);
-  vec4.normalize(myHit.surfNorm, myHit.surfNorm);
+  vec3.normalize(myHit.surfNorm, myHit.surfNorm);
 */
 
 
@@ -365,12 +366,12 @@ CGeom.prototype.traceDisk = function(inRay, myHit) {
   vec4.negate(myHit.viewN, inRay.dir);     
   // ( CAREFUL! vec4.negate() changes sign of ALL components: x,y,z,w !!
   // inRay.dir MUST be a vector, not a point, to ensure w sign has no effect)
-  vec4.normalize(myHit.viewN, myHit.viewN); // ensure a unit-length vector.
+  vec3.normalize(myHit.viewN, myHit.viewN); // ensure a unit-length vector.
   // Now find surface normal: 
   // in model space we know it's always +z,
   // but we need to TRANSFORM the normal to world-space, & re-normalize it.
   vec4.transformMat4(myHit.surfNorm, vec4.fromValues(0,0,1,0), this.normal2world);
-  vec4.normalize(myHit.surfNorm, myHit.surfNorm);
+  vec3.normalize(myHit.surfNorm, myHit.surfNorm);
   
 //-------------find hit-point color:----------------
   this.matl.setMatl(MATL_BRASS);
@@ -543,12 +544,12 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
   //vec4.copy(myHit.viewN,inRay.dir);
   // ( CAREFUL! vec4.negate() changes sign of ALL components: x,y,z,w !!
   // inRay.dir MUST be a vector, not a point, to ensure w sign has no effect)
-  vec4.normalize(myHit.viewN, myHit.viewN); // ensure a unit-length vector.
+  vec3.normalize(myHit.viewN, myHit.viewN); // ensure a unit-length vector.
   // Now find surface normal: 
   // in model space we know it's always +z,
   // but we need to TRANSFORM the normal to world-space, & re-normalize it.
   vec4.transformMat4(myHit.surfNorm, myHit.hitPt, this.normal2world);
-  vec4.normalize(myHit.surfNorm, myHit.surfNorm);
+  vec3.normalize(myHit.surfNorm, myHit.surfNorm);
   // TEMPORARY: sphere color-setting
   myHit.hitNum = 1;   // in CScene.makeRayTracedImage, use 'this.gapColor'
   this.matl.setMatl(MATL_GOLD_SHINY);
@@ -568,4 +569,48 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
     //      t1 = tcaS/DL2 + sqrt(L2hc/DL2)  // POSITIVE: in front of ray origin.
     //      ====================================
     //  Use the t1 hit point, as only t1 is AHEAD of the ray's origin.
+}
+
+CGeom.prototype.traceBox = function(inRay, myHit){
+  var rayT = new CRay();    // to create 'rayT', our local model-space ray.
+  vec4.copy(rayT.orig, inRay.orig);   // memory-to-memory copy. 
+  vec4.copy(rayT.dir, inRay.dir);
+                            // (DON'T do this: rayT = inRay; // that sets rayT
+                            // as a REFERENCE to inRay. Any change to rayT is
+                            // also a change to inRay (!!).
+  vec4.transformMat4(rayT.orig, inRay.orig, this.worldRay2model);
+  vec4.transformMat4(rayT.dir,  inRay.dir,  this.worldRay2model);
+
+  for(var i=0; i<3; i++){
+    //t0*rayT.dir + rayT.orig = 1
+    for (var j=-1; j<2; j+=2){
+      normal = vec4.create();
+      var nA = [0,0,0];
+      nA[i] = j;
+      vec4.set(normal,nA[0],nA[1],nA[2],1);
+      t0 = (j - rayT.orig[i])/rayT.dir[i];
+      i1 = (i+1)%3;
+      i2 = (i+2)%3;
+      s1 = rayT.orig[i1]+t0*rayT.dir[i1];
+      s2 = rayT.orig[i2]+t0*rayT.dir[i2];
+      //console.log(vec4.str(inRay.dir));
+      //console.log(s1,s2);
+      if (Math.abs(s1)<=1 && Math.abs(s2) <= 1){
+        if (t0 < myHit.t0){
+          //console.log(myHit);
+          myHit.t0 = t0;
+          myHit.hitGeom = this;
+          myHit.hitNum = 1;
+          this.matl.setMatl(MATL_JADE);
+          vec4.scaleAndAdd(myHit.hitPt,inRay.orig, inRay.dir, myHit.t0);
+          vec4.negate(myHit.viewN, inRay.dir);
+          vec3.normalize(myHit.viewN, myHit.viewN);
+          vec4.transformMat4(myHit.surfNorm, normal,this.normal2world);
+          vec3.normalize(myHit.surfNorm, myHit.surfNorm);
+          //console.log(vec4.str(myHit.viewN));
+        }
+      }
+    }
+  }
+  return;
 }

@@ -149,8 +149,9 @@ function VBObox0() {  // (JUST ONE instance: as 'preView' var
 // /*
  this.bgnSphere = this.vboVerts;    // remember starting vertex for 'sphere'
  this.appendWireSphere();           // create (default-resolution) sphere
-/* this.bgnCube = this.vboVerts;      // remember starting vertex for 'cube'
- this.appendWireCube();                 // YOU write these!
+ this.bgnCube = this.vboVerts;      // remember starting vertex for 'cube'
+ this.appendLineCube();                 // YOU write these!
+ /*
  this.bgnCyl  = this.vboVerts;      // remember starting vertex for 'cylinder'
  this.appendWireCylinder();
 // */
@@ -633,6 +634,35 @@ VBObox0.prototype.appendLineCube = function() {
 //
 //
 //
+var vertSet = 
+[ 0,0,0,1, 	0.3, 1.0, 1.0, 1.0,
+  0,0,1,1, 	0.3, 1.0, 1.0, 1.0,
+  0,1,1,1, 	0.3, 1.0, 1.0, 1.0,
+  0,1,0,1, 	0.3, 1.0, 1.0, 1.0,
+  0,0,0,1,	0.3, 1.0, 1.0, 1.0,
+  
+  1,0,0,1, 	0.3, 1.0, 1.0, 1.0,
+  1,0,1,1, 	0.3, 1.0, 1.0, 1.0,
+  0,0,1,1, 	0.3, 1.0, 1.0, 1.0,
+  1,0,1,1, 	0.3, 1.0, 1.0, 1.0,
+  1,1,1,1, 	0.3, 1.0, 1.0, 1.0,
+  
+  1,1,0,1, 	0.3, 1.0, 1.0, 1.0,
+  1,0,0,1, 	0.3, 1.0, 1.0, 1.0,
+  1,1,0,1, 	0.3, 1.0, 1.0, 1.0,
+  0,1,0,1, 	0.3, 1.0, 1.0, 1.0,
+  1,1,0,1, 	0.3, 1.0, 1.0, 1.0,
+  
+  1,1,1,1, 	0.3, 1.0, 1.0, 1.0,
+  0,1,1,1, 	0.3, 1.0, 1.0, 1.0,
+
+  ];
+
+var tmp = new Float32Array(this.vboContents.length + vertSet.length);
+tmp.set(this.vboContents, 0);     // copy old VBOcontents into tmp, and
+tmp.set(vertSet,this.vboContents.length); // copy new vertSet just after it.
+this.vboVerts += 17;       // find number of verts in both.
+this.vboContents = tmp;           // REPLACE old vboContents with tmp 
 }
 
 VBObox0.prototype.init = function() {
@@ -930,7 +960,7 @@ VBObox0.prototype.draw = function() {
                   // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
                   //          gl.TRIANGLES, gl.TRIANGLE_STRIP, ...
   								this.bgnSphere, 	// location of 1st vertex to draw;
-                  this.vboVerts - this.bgnSphere); // How many vertices to draw
+                  this.bgnCube - this.bgnSphere); // How many vertices to draw
   
   mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)
   
@@ -945,8 +975,23 @@ VBObox0.prototype.draw = function() {
                   // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
                   //          gl.TRIANGLES, gl.TRIANGLE_STRIP, ...
   								this.bgnSphere, 	// location of 1st vertex to draw;
-                  this.vboVerts - this.bgnSphere); // How many vertices to draw
-  mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)  
+                  this.bgnCube - this.bgnSphere); // How many vertices to draw
+
+  mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)   
+  mat4.translate(this.mvpMat, this.mvpMat, vec3.fromValues(4,-4,1));
+  mat4.scale(this.mvpMat,this.mvpMat,vec3.fromValues(2,2,2));
+  // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
+  gl.uniformMatrix4fv(this.u_mvpMatLoc,	// GPU location of the uniform
+  										false, 				// use matrix transpose instead?
+  										this.mvpMat);	// send data from Javascript.
+  //mat4.copy(this.mvpMat, tmp);      // restore world-space mvpMat values.
+  gl.drawArrays(gl.LINE_STRIP, 	      // select the drawing primitive to draw,
+                  // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
+                  //          gl.TRIANGLES, gl.TRIANGLE_STRIP, ...
+  								this.bgnCube, 	// location of 1st vertex to draw;
+                  this.vboContents - this.bgnCube); // How many vertices to draw
+
+  
 }
 
 VBObox0.prototype.reload = function() {
