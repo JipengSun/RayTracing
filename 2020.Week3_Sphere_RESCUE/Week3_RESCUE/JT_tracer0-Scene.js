@@ -4,6 +4,8 @@
 
 
 
+
+
 //===  JT_tracer0-Scene.js  ===================================================
 // The object prototypes here and in related files (and their comments):
 //      JT_tracer1-Camera.js
@@ -120,6 +122,9 @@ function CHit() {
                                 // useful for Phong lighting, etc.)
     this.isEntering=true;       // true iff ray origin was OUTSIDE the hitGeom.
                                 //(example; transparency rays begin INSIDE).
+    this.lightV = vec4.create();
+
+    this.reflectV = vec4.create();
                                 
     this.modelHitPt = vec4.create(); // the 'hit point' in model coordinates.
     // *WHY* have modelHitPt? to evaluate procedural textures & materials.
@@ -159,9 +164,9 @@ CHit.prototype.init  = function() {
                                 // (default: giant distance to very-distant-sky)
   vec4.set(this.hitPt, this.t0, 0,0,1); // Hit-point: the World-space location 
                                 //  where the ray pierce surface of CGeom item.
-  vec4.set(this.surfNorm,-1,0,0,0);  // World-space surface-normal vector 
+  vec4.set(this.surfNorm,0,0,0,0);  // World-space surface-normal vector 
                                 // at the hit-point: perpendicular to surface.
-  vec4.set(this.viewN,-1,0,0,0);// Unit-length vector from hitPt back towards
+  vec4.set(this.viewN,0,0,0,0);// Unit-length vector from hitPt back towards
                                 // the origin of the ray we traced.  (VERY
                                 // useful for Phong lighting, etc.)
   this.isEntering=true;         // true iff ray origin was OUTSIDE the hitGeom.
@@ -375,7 +380,7 @@ CScene.prototype.initScene = function(num) {
 
       this.light.setPosition(5,-5,5);
       this.light.setColor(1.0,1.0,1.0);
-      this.light.setIllum(0,0,1);
+      this.light.setIllum(1,1,1);
 
 
       break;
@@ -432,6 +437,7 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
    // holds the nearest ray/grid intersection (if any)
                           // found by tracing eyeRay thru all CGeom objects
                           // held in our CScene.item[] array.
+  this.depth = 0;
                            
   for(j=0; j< this.imgBuf.ySiz; j++) {        // for the j-th row of pixels.
   	for(i=0; i< this.imgBuf.xSiz; i++) {	    // and the i-th pixel on that row,
@@ -461,7 +467,8 @@ CScene.prototype.makeRayTracedImage = function(AAcode,isJitter) {
           myHit = this.traceRay(this.eyeRay);
           // Find eyeRay color from myHit-----------------------------------------
           //console.log(myHit.viewN);
-          colr = this.findShade(myHit,colr)
+          colr = this.findShade(myHit,colr);
+          
         }
       }
       //console.log(colr)
@@ -562,10 +569,10 @@ CScene.prototype.findShade = function(myHit1,colr){
         vec4.add(mV,Lv,viewV);
         vec3.normalize(mV,mV);
         MN = vec3.dot(mV,normalV);
-        vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,MN),myMatl.K_shiny));
+        vec4.scaleAndAdd(colr,colr,specTerm,Math.pow(Math.max(0,RV),myMatl.K_shiny));
         //console.log(myHit1.viewN);
         if(myHit1.hitGeom.shapeType == RT_BOX){
-          console.log(RV,viewV,Rv)
+          console.log(RV,viewV,Rv,normalV)
           //console.log(vec4.str(myHit1.viewN), vec4.str(myHit1.Lv),LN)
           }
       }
@@ -593,4 +600,23 @@ CScene.prototype.findShade = function(myHit1,colr){
   */
   return colr
 
+}
+
+CScene.prototype.getReflection = function(currentHit,colr,depth){
+  if (G_DEPTH_MAX - depth > 0){
+    reflectRay = new CRay();
+    reflectRay.orig = currentHit.hitPt;
+    reflectRay.dir = currentHit.reflectV;
+    nextHit = this.traceRay(reflectRay);
+    this.findShade(nextHit,colr);
+    
+  }
+
+}
+function getRefelctV(hit){
+  LN = vec4.dot(hit.surfNorm,hit.lightV);
+  Cv = vec4.create();
+  vec4.scale(Cv,hit.surfNorm,2*LN);
+  vec4.subtract(hit.reflectV,Cv,hit.lightV);
+  vec4.normalize(hit.reflectV,hit.reflectV);
 }
