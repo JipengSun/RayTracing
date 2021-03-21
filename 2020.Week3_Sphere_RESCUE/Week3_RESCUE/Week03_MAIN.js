@@ -74,7 +74,7 @@ var g_AAcode = 1;			// Antialiasing setting: 1 == NO antialiasing at all.
 var G_AA_MAX = 4;				// highest super-sampling number allowed. 
 var g_isJitter = 0;     // ==1 for jitter, ==0 for no jitter.
 
-var G_DEPTH_MAX = 1;
+var G_DEPTH_MAX = 0;
 
 //--END---GLOBAL VARIABLES------------------------------------------------------
 

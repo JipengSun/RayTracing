@@ -414,6 +414,9 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
   }
 */
   // END DIAGNOSTIC:------------------------------------------------------------
+  this.matl1 = new CMatl(MATL_EMERALD);
+  this.matl2 = new CMatl(MATL_GOLD_SHINY);
+
  
 // Half-Chord Method===================
 //(see Ray-Tracing Lecture Notes D)
@@ -553,6 +556,9 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
   // TEMPORARY: sphere color-setting
   myHit.hitNum = 1;   // in CScene.makeRayTracedImage, use 'this.gapColor'
   this.matl.setMatl(MATL_GOLD_SHINY);
+
+
+  this.get3DCheckerBoard(myHit.modelHitPt[0],myHit.modelHitPt[1],myHit.modelHitPt[2],0.1,0.1,0.1)
  
    // DIAGNOSTIC:---------------------------------------------------------------
   if(g_myScene.pixFlag ==1) {   // did we reach the one 'flagged' pixel
@@ -561,7 +567,6 @@ CGeom.prototype.traceSphere = function(inRay, myHit) {
               "LM2", LM2, "L2hc", L2hc, "t0hit", t0hit, );  // YES!
   }
   // END DIAGNOSTIC:------------------------------------------------------------
- 
   // FOR LATER:
   // If the ray begins INSIDE the sphere (because L2 < radius^2),
     //      ====================================
@@ -623,4 +628,12 @@ CGeom.prototype.traceBox = function(inRay, myHit){
     }
   }
   return;
+}
+
+CGeom.prototype.get3DCheckerBoard = function(x,y,z,xgap,ygap,zgap){
+  tot = Math.floor(x/xgap) + Math.floor(y/ygap) + Math.floor(z/zgap);
+  var y = tot%2;
+  if(y<0) y = -y;
+  if (y > 0.5) this.matl = this.matl1;
+  else this.matl = this.matl2;
 }
