@@ -371,7 +371,7 @@ CScene.prototype.initScene = function(num) {
       this.item.push(new CGeom(RT_BOX));
       iNow = this.item.length-1;
       this.item[iNow].setIdent();
-      this.item[iNow].rayTranslate(4,-4,1);
+      this.item[iNow].rayTranslate(3,-3,1);
 
       this.light.setPosition(5,-5,5);
       this.light.setColor(1.0,1.0,1.0);

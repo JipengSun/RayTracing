@@ -977,9 +977,10 @@ VBObox0.prototype.draw = function() {
   								this.bgnSphere, 	// location of 1st vertex to draw;
                   this.bgnCube - this.bgnSphere); // How many vertices to draw
 
-  mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)   
-  mat4.translate(this.mvpMat, this.mvpMat, vec3.fromValues(4,-4,1));
-  mat4.scale(this.mvpMat,this.mvpMat,vec3.fromValues(2,2,2));
+  mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)
+  mat4.translate(this.mvpMat, this.mvpMat, vec3.fromValues(2,-4,0));
+  mat4.scale(this.mvpMat,this.mvpMat,vec3.fromValues(2,2,2));   
+  
   // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
   gl.uniformMatrix4fv(this.u_mvpMatLoc,	// GPU location of the uniform
   										false, 				// use matrix transpose instead?
@@ -989,7 +990,7 @@ VBObox0.prototype.draw = function() {
                   // choices: gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP, 
                   //          gl.TRIANGLES, gl.TRIANGLE_STRIP, ...
   								this.bgnCube, 	// location of 1st vertex to draw;
-                  this.vboContents - this.bgnCube); // How many vertices to draw
+                  this.vboVerts - this.bgnCube); // How many vertices to draw
 
   
 }
