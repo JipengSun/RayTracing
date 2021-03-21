@@ -420,7 +420,9 @@ CScene.prototype.initScene = function(num) {
       // Initially leave sphere at the origin. Once you see it, then
       // move it to a more-sensible location:
   	  this.item[iNow].setIdent();                   // start in world coord axes
+      this.item[iNow].rayScale(1,1,2);
       this.item[iNow].rayTranslate(0,0, 1.0);  // move rightwards (+x),
+      
       // and toward camera (-y) enough to stay clear of disks, and up by 1 to
       // make this radius==1 sphere rest on gnd-plane.
 

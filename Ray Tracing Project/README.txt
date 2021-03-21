@@ -14,8 +14,8 @@ Implemented Functional points:
     5. Texured Geoms with materials: Sphere, Disk, Box, Ground
     6. WebGL preview
     7. Shadows
+    8. More lights sources
 
 Futrue Improvements:
-    1. More lights sources
-    2. Transparency
-    3. More complex shapes
+    1. Transparency
+    2. More complex shapes

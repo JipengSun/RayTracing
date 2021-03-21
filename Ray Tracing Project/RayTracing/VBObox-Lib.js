@@ -1019,6 +1019,7 @@ switch(g_SceneNum){
 
     // 3)--------------------copy transforms for Sphere 1 in CScene.initScene(0)
     mat4.copy(this.mvpMat, tmp); // RESTORE current value (needs push-down stack!)
+    mat4.scale(this.mvpMat,this.mvpMat,vec3.fromValues(1,1,2))
     mat4.translate(this.mvpMat, this.mvpMat, vec3.fromValues(0, 0, 1.0));
     // Send  new 'ModelMat' values to the GPU's 'u_ModelMat1' uniform: 
     gl.uniformMatrix4fv(this.u_mvpMatLoc,	// GPU location of the uniform
